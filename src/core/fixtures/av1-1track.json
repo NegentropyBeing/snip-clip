@@ -1,0 +1,37 @@
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "index": 0,
+            "codec_name": "av1",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1060,
+            "color_transfer": "smpte170m",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "15320/269",
+            "tags": {
+                "handler_name": "VideoHandle"
+            }
+        },
+        {
+            "index": 1,
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "channels": 2,
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "tags": {
+                "handler_name": "SoundHandle"
+            }
+        }
+    ],
+    "format": {
+        "duration": "13.450542"
+    }
+}

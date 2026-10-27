@@ -1,0 +1,58 @@
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "144/1",
+            "avg_frame_rate": "144/1",
+            "tags": {
+                "handler_name": "VideoHandler"
+            }
+        },
+        {
+            "index": 1,
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "channels": 1,
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "tags": {
+                "handler_name": "Mix"
+            }
+        },
+        {
+            "index": 2,
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "channels": 1,
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "tags": {
+                "handler_name": "Jogo"
+            }
+        },
+        {
+            "index": 3,
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "channels": 1,
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "tags": {
+                "handler_name": "Microfone"
+            }
+        }
+    ],
+    "format": {
+        "duration": "2.000000"
+    }
+}

@@ -11,7 +11,7 @@
 
 Recorte um ou vários micro-clipes de gravações de jogos (replays do OBS, app da NVIDIA, qualquer vídeo que o FFmpeg leia) e exporte prontos para compartilhar — por padrão como **arquivos do tamanho do Discord (≤ 20 MB)**.
 
-> **Status:** prévia inicial (**v0.1.0-beta.1**, Windows). Por enquanto precisa do **FFmpeg no `PATH`** — o download pelo app, a cópia para a área de transferência e a tela de configurações ainda estão por vir. Veja o [ROADMAP.md](ROADMAP.md) (em inglês) e a [spec.md](spec.md).
+> **Status:** prévia inicial (**v0.1.0-beta.2**, Windows). Por enquanto precisa do **FFmpeg no `PATH`** — o download pelo app, a cópia para a área de transferência e a tela de configurações ainda estão por vir. Veja o [ROADMAP.md](ROADMAP.md) (em inglês) e a [spec.md](spec.md).
 
 ## O que ele vai fazer (v0.1)
 

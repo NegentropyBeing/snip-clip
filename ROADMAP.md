@@ -32,7 +32,6 @@ Scope: [spec.md](spec.md).
 | **GIF** and WebM output | Output |
 | Per-track waveforms | Timeline |
 | Auto-update (Tauri updater) | Distribution |
-| Code signing (Windows / macOS) | Distribution |
 | Stream-copy montage (needs temporary segments) | Export |
 
 Out of scope: batch library compression — that is a separate project.

@@ -2,7 +2,7 @@
 
 [English](README.md) · **Português**
 
-Isto configura o OBS Studio no Windows como um gravador de "replay instantâneo" sempre ligado: os últimos minutos ficam na memória e são salvos num arquivo quando você aperta **Alt+F10**. Cada fonte de áudio ganha uma faixa própria com nome, então no snip-clip você pode tirar o Discord ou o navegador de um clipe, ou abaixar o microfone.
+Isto configura o OBS Studio no Windows e no Linux como um gravador de "replay instantâneo" sempre ligado: os últimos minutos ficam na memória e são salvos num arquivo quando você aperta **Alt+F10**. Cada fonte de áudio ganha uma faixa própria com nome, então no snip-clip você pode tirar o Discord ou o navegador de um clipe, ou abaixar o microfone.
 
 | Faixa | Nome | Conteúdo |
 |---|---|---|
@@ -13,7 +13,9 @@ Isto configura o OBS Studio no Windows como um gravador de "replay instantâneo"
 | 5 | Microfone | Microfone padrão |
 | 6 | Sistema (tudo) | Tudo o que o PC toca (reserva, caso alguma fonte escape) |
 
-Os nomes acima são os da versão em português (`--lang pt`). Por padrão o script segue o idioma do Windows.
+Os nomes acima são os da versão em português (`--lang pt`). Por padrão o script segue o idioma do sistema.
+
+Os passos abaixo são para o Windows. No Linux, siga-os com as mudanças da seção [Linux](#linux).
 
 ## 1. Antes de começar
 
@@ -24,7 +26,7 @@ Os nomes acima são os da versão em português (`--lang pt`). Por padrão o scr
 
 ## 2. Baixe os arquivos
 
-Baixe este repositório (botão verde **Code** → **Download ZIP**) e extraia, ou clone com git. Você só precisa dos dois arquivos em `extras/obs/`.
+Baixe este repositório (botão verde **Code** → **Download ZIP**) e extraia, ou clone com git. Você só precisa dos arquivos em `extras/obs/`.
 
 ## 3. Crie o perfil
 
@@ -57,10 +59,11 @@ Combine as que quiser:
 | `--output` pasta | `--output "D:/Replays"` | `~/Videos/OBS Replays` |
 | `--size` tamanho da tela e do vídeo | `--size 1920x1080` | tela principal |
 | `--fps` | `--fps 30` | `60` |
-| `--encoder` | `nvenc-av1`, `nvenc-hevc`, `nvenc-h264`, `x264` | `auto` |
+| `--encoder` | `nvenc-av1`, `nvenc-hevc`, `nvenc-h264`, `x264` (no Linux também `vaapi-av1`, `vaapi-hevc`, `vaapi-h264`) | `auto` |
 | `--quality` menor = melhor e maior | `--quality 24` | `28` |
 | `--browser` (repita para vários) | `--browser firefox --browser zen` | `chrome`, `firefox` |
-| `--lang` nomes das faixas e fontes | `--lang pt` | idioma do Windows |
+| `--lang` nomes das faixas e fontes | `--lang pt` | idioma do sistema |
+| `--app-audio` (Linux) faixas Jogo, Discord e Navegador | `on`, `off` | `auto`: ligado se o plugin estiver instalado |
 
 O `auto` testa sua GPU com o FFmpeg quando ele está instalado; senão, lê o nome da placa NVIDIA. Para escolher você mesmo:
 
@@ -112,3 +115,59 @@ Para ver qual fonte vai para qual faixa, no OBS vá em *Editar → Propriedades 
   - o arquivo `.json` vai para `scenes\`.
 
 Os nomes dos menus do OBS acima são os da interface em português e podem variar um pouco entre versões.
+
+## Linux
+
+Tudo o que está acima vale, com estas mudanças. Você precisa do OBS 31 ou mais novo e do PipeWire, no X11 ou no Wayland.
+
+### Antes de começar
+
+- **Instale o OBS Studio, o Python 3 e o FFmpeg** pela sua distribuição (o FFmpeg só é usado para testar os encoders da GPU), ou o OBS pelo Flathub: `flatpak install flathub com.obsproject.Studio`. Se os dois estiverem instalados, o script configura o OBS nativo.
+- **Instale o plugin [obs-pipewire-audio-capture](https://github.com/dimtpap/obs-pipewire-audio-capture)** para as faixas Jogo, Discord e Navegador. No Linux, o OBS sozinho não captura o áudio de um app específico.
+  - OBS do Flatpak: `flatpak install flathub com.obsproject.Studio.Plugin.PipeWireAudioCapture`
+  - OBS nativo: extraia o arquivo da última versão do plugin em `~/.config/obs-studio/plugins/`.
+
+  Sem ele o perfil funciona do mesmo jeito, com três faixas: Mix (sistema + microfone), Microfone e Sistema.
+
+### Crie o perfil
+
+```sh
+cd extras/obs
+python3 obs-setup.py --lang pt
+```
+
+O que muda em relação ao Windows:
+
+- **Tela.** No X11 é usada a *Captura de tela (XSHM)* da primeira tela. No Wayland, a *Captura de tela (PipeWire)*: na primeira vez que o OBS abre, ele pergunta qual tela compartilhar. Escolha e permita que a escolha seja lembrada.
+- **Faixa Jogo.** Não existe captura de jogo no Linux, então a faixa *Jogo* recebe todos os apps **menos** o Discord, os navegadores e o OBS. Sons de notificação de outros apps também caem nela.
+- **Encoder.** O `auto` também testa o VAAPI (GPUs AMD e Intel) depois do NVENC: AV1, depois HEVC, depois H.264. O VAAPI usa QP constante (`--quality` menos 5).
+- **Replays** vão para a sua pasta de vídeos (`xdg-user-dir VIDEOS`), em `OBS Replays`.
+- **Backups** vão para `~/.config/obs-studio/basic/backup-<data>/`, ou `~/.var/app/com.obsproject.Studio/config/obs-studio/basic/backup-<data>/` no Flatpak.
+
+### Salvar com Alt+F10 no Wayland
+
+No Wayland, o OBS só recebe atalhos com a janela dele em foco, então o Alt+F10 não faz nada durante um jogo. No X11 funciona como no Windows.
+
+No Wayland, o `obs-setup.py` liga o servidor WebSocket que vem com o OBS (porta 4455, com uma senha gerada por ele; uma senha que já exista é mantida). O `obs-save-replay.py` usa esse servidor para salvar o replay e mostra uma notificação. Ligue-o ao Alt+F10 no seu ambiente gráfico:
+
+- **GNOME:** *Configurações → Teclado → Ver e personalizar atalhos → Atalhos personalizados → +*. Comando: `python3 /caminho/completo/para/extras/obs/obs-save-replay.py`. O GNOME já usa Alt+F10 para maximizar janelas: libere em *Janelas → Alternar estado de maximização*, ou escolha outra tecla.
+- **KDE Plasma:** *Configurações do sistema → Teclado → Atalhos → Adicionar novo → Comando ou script*, mesmo comando.
+
+O servidor escuta em todas as interfaces de rede; a senha o protege. Para desligar, vá no OBS em *Ferramentas → Configurações do servidor WebSocket*.
+
+### Ative sempre
+
+O `obs-replay.sh` abre o OBS (o nativo, senão o do Flatpak) com este perfil e o replay buffer já ligado. Para abrir ao entrar na sessão, rode isto em `extras/obs/`:
+
+```sh
+chmod +x obs-replay.sh
+mkdir -p ~/.config/autostart
+cat > ~/.config/autostart/snip-clip-replay.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=OBS replay (snip-clip)
+Exec="$PWD/obs-replay.sh"
+EOF
+```
+
+Você também pode rodar `./obs-replay.sh` para abrir agora.

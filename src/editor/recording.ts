@@ -7,7 +7,7 @@ import {
 } from "../core";
 import i18n from "../i18n";
 import {
-  execFfmpeg, obsInstallProfile, obsReadProfile, obsReadWebsocket, obsRegisterGnomeShortcut, obsRemoveProfile,
+  ensureDir, execFfmpeg, obsInstallProfile, obsReadProfile, obsReadWebsocket, obsRegisterGnomeShortcut, obsRemoveProfile,
   obsSetAutostart, obsUnregisterGnomeShortcut, obsWriteWebsocket, pathExists, type ObsStatus,
 } from "../platform/tauri";
 import { updateSettings, useApp } from "./app";
@@ -111,6 +111,8 @@ export async function installReplayProfile(
   options: ReplayProfileOptions, status: ObsStatus, autostart: boolean,
 ): Promise<{ backup: string | null; conflicts: string[] }> {
   const env = recordingEnv(status);
+  // OBS does not create the folder: without it, the replay buffer stops with "Bad File Path".
+  await ensureDir(options.replaysFolder);
   const backup = await obsInstallProfile(buildReplayProfile(options, env), stamp());
   if (env.wayland) {
     const { config, turnedOn } = enableWebsocket(await readWebsocket(), randomPassword());

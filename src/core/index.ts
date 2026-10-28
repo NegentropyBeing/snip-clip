@@ -8,6 +8,7 @@ export * from "./export";
 export * from "./probe";
 export * from "./encoderProbe";
 export * from "./cuts";
+export * from "./cutOverride";
 export * from "./preview";
 export * from "./project";
 export * from "./timecode";

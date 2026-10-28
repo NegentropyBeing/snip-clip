@@ -113,4 +113,19 @@ describe("project", () => {
     expect(p.mode).toBe("montage");
     expect(parseProject("{", 1)).toBeNull();
   });
+
+  it("keeps the valid tracks of cut overrides and drops the rest", () => {
+    const json = JSON.stringify({
+      version: 1, path: "/v/a.mp4", presetId: "discord-20", mode: "separate", mix: [],
+      cuts: [
+        { id: "1", name: "", startSec: 1, endSec: 2, override: { 1: { enabled: false, volume: 3 }, 7: { enabled: true, volume: 1 }, x: {} } },
+        { id: "2", name: "", startSec: 3, endSec: 4, override: { 0: { enabled: "no" } } },
+        { id: "3", name: "", startSec: 5, endSec: 6 },
+      ],
+    });
+    const { cuts } = parseProject(json, 2)!;
+    expect(cuts[0].override).toEqual({ 1: { enabled: false, volume: 2 } });
+    expect(cuts[1]).not.toHaveProperty("override");
+    expect(cuts[2]).toEqual({ id: "3", name: "", startSec: 5, endSec: 6 });
+  });
 });

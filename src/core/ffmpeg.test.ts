@@ -115,6 +115,42 @@ describe("buildJob", () => {
     expect(args).toContain("0:a:4");
   });
 
+  describe("cut overrides", () => {
+    // Cut b turns Discord on (the video has it off) and the Jogo down; cut a follows the video.
+    const cuts = [
+      { id: "a", name: "", startSec: 10, endSec: 20 },
+      { id: "b", name: "", startSec: 50, endSec: 65, override: { 1: { enabled: true, volume: 0.5 }, 2: { enabled: true, volume: 1 } } },
+    ];
+
+    it("mixes each cut with its own override (FR-54)", () => {
+      const graph = argAfter(buildJob(request("discord-20", { cuts, backend: "nvenc" })).passes[0], "-filter_complex");
+      expect(graph).toContain("[0:a:1]volume=1.50");
+      expect(graph).toContain("[1:a:1]volume=0.50");
+      expect(graph).toContain("[0:a:2]volume=0.00");
+      expect(graph).toContain("[1:a:2]volume=1.00");
+      expect(graph).toContain("concat=n=2:v=1:a=1");
+    });
+
+    it("keeps a track that is on in one cut, silent in the others (FR-55)", () => {
+      const args = buildJob(request("unlimited", { cuts, keepSeparateTracks: true, backend: "nvenc" })).passes[0];
+      expect(argAfter(args, "-filter_complex")).toContain("concat=n=2:v=1:a=3");
+      expect(args.filter((a) => a === "-map")).toHaveLength(4);
+    });
+
+    it("exports a cut on its own with only its tracks", () => {
+      const off = [{ id: "c", name: "", startSec: 10, endSec: 20, override: { 4: { enabled: false, volume: 1 } } }];
+      const graph = argAfter(buildJob(request("discord-20", { cuts: off, backend: "nvenc" })).passes[0], "-filter_complex");
+      expect(graph).not.toContain("0:a:4");
+      expect(graph).not.toContain("amix");
+    });
+
+    it("chooses the copied tracks per cut and ignores volumes (FR-56)", () => {
+      const args = buildJob(request("original", { cuts: [cuts[1]] })).passes[0];
+      expect(args).toContain("0:a:2");
+      expect(args).not.toContain("-filter_complex");
+    });
+  });
+
   it("refuses a montage with stream copy", () => {
     const cuts = [
       { id: "a", name: "", startSec: 0, endSec: 5 },

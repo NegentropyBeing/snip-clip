@@ -1,3 +1,4 @@
+import { cutMix } from "./cutOverride";
 import { ENCODER_NAMES } from "./encoders";
 import type { Cut, EncoderBackend, MediaInfo, OutputPlan, Preset, TrackMix, VideoCodec } from "./types";
 
@@ -29,8 +30,10 @@ export const TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,
 
 const sec = (s: number) => s.toFixed(3);
 
+/** Tracks on in at least one cut: they go in the file, silent in the cuts where they are off (FR-55). */
 function enabledTracks(req: ExportRequest): number[] {
-  return req.media.audioTracks.map((t) => t.index).filter((i) => req.mix[i]?.enabled);
+  const mixes = req.cuts.map((c) => cutMix(req.mix, c));
+  return req.media.audioTracks.map((t) => t.index).filter((i) => mixes.some((m) => m[i]?.enabled));
 }
 
 function inputArgs(req: ExportRequest): string[] {
@@ -61,13 +64,15 @@ function buildGraph(req: ExportRequest, includeAudio: boolean): Graph {
   const vf = videoFilters(req);
   const parts: string[] = [];
   // Per cut: one video label and the audio labels for that segment.
-  const segments = req.cuts.map((_, k) => {
+  const segments = req.cuts.map((cut, k) => {
     parts.push(`[${k}:v:0]${vf}[v${k}]`);
     const audio: string[] = [];
+    const mix = cutMix(req.mix, cut);
     if (tracks.length > 0) {
       const gained = tracks.map((t) => {
         const label = `a${k}_${t}`;
-        parts.push(`[${k}:a:${t}]volume=${req.mix[t].volume.toFixed(2)}[${label}]`);
+        const gain = mix[t].enabled ? mix[t].volume : 0;
+        parts.push(`[${k}:a:${t}]volume=${gain.toFixed(2)}[${label}]`);
         return label;
       });
       if (!mixed) audio.push(...gained);

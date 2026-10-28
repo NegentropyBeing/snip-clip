@@ -1,3 +1,4 @@
+import type { MixRegion } from "./cutOverride";
 import { TONEMAP } from "./ffmpeg";
 import type { MediaInfo, TrackMix } from "./types";
 
@@ -57,15 +58,25 @@ export function decodeEnvelope(bytes: ArrayBuffer): Float32Array {
   return out;
 }
 
-/** Approximate envelope of the current mix: gain-weighted sum of the enabled tracks, clipped to 1. */
-export function mixEnvelope(tracks: readonly (Float32Array | undefined)[], mix: readonly TrackMix[]): Float32Array {
+/**
+ * Approximate envelope of the current mix: gain-weighted sum of the enabled tracks, clipped to 1.
+ * With `regions`, each region uses its own mix (cut overrides, FR-53).
+ */
+export function mixEnvelope(
+  tracks: readonly (Float32Array | undefined)[], mix: readonly TrackMix[], regions?: readonly MixRegion[],
+): Float32Array {
   const length = Math.max(0, ...tracks.map((t) => t?.length ?? 0));
   const out = new Float32Array(length);
-  tracks.forEach((env, i) => {
-    const m = mix[i];
-    if (!env || !m?.enabled || m.volume === 0) return;
-    for (let j = 0; j < env.length; j++) out[j] += env[j] * m.volume;
-  });
+  const spans = regions ?? [{ startSec: 0, endSec: Infinity, mix }];
+  for (const span of spans) {
+    const from = Math.max(0, Math.round(span.startSec * ENVELOPE_RATE));
+    const to = Math.min(length, Math.round(span.endSec * ENVELOPE_RATE));
+    tracks.forEach((env, i) => {
+      const m = span.mix[i];
+      if (!env || !m?.enabled || m.volume === 0) return;
+      for (let j = from; j < Math.min(to, env.length); j++) out[j] += env[j] * m.volume;
+    });
+  }
   for (let j = 0; j < length; j++) if (out[j] > 1) out[j] = 1;
   return out;
 }

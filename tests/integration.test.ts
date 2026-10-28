@@ -118,6 +118,13 @@ describe.skipIf(!hasFfmpeg)("FFmpeg integration", () => {
     expect(r.audioCount).toBe(2);
   }, 180_000);
 
+  it("a montage keeps a track that only one cut turns on, silent in the other (FR-55)", async () => {
+    const cuts: Cut[] = [two[0], { ...two[1], override: { 1: { enabled: true, volume: 1 } } }];
+    const r = await run("unlimited", sdr, false, cuts, { keepSeparateTracks: true });
+    expect(r.audioCount).toBe(3);
+    expect(r.duration).toBeCloseTo(10, 0);
+  }, 180_000);
+
   it("original stream-copies the chosen tracks", async () => {
     const r = await run("original", sdr, false, one);
     expect(r.video.codec_name).toBe("h264");

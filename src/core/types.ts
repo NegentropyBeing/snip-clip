@@ -24,11 +24,16 @@ export interface TrackMix {
   volume: number;
 }
 
+/** The tracks where a cut differs from the video's mix, by track ordinal (spec §17). */
+export type CutOverride = Record<number, TrackMix>;
+
 export interface Cut {
   id: string;
   name: string;
   startSec: number;
   endSec: number;
+  /** Absent: every track follows the video's mix. */
+  override?: CutOverride;
 }
 
 export type OutputMode = "separate" | "montage";

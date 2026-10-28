@@ -5,7 +5,7 @@
   </picture>
 </p>
 
-# snip-clip
+# clip-snip
 
 **English** · [Português](README.pt-BR.md)
 

@@ -4,7 +4,7 @@ Replay buffer always on, one audio track per source (game, Discord, browser, mic
 saved with a hotkey. Close OBS before running. The current profile and collection with the
 same name, if any, are backed up to <obs-studio>/basic/backup-<date>/ first.
 
-    python obs-setup.py                      # 3 min buffer, detected screen size, NVENC AV1
+    python obs-setup.py                      # 3 min buffer, detected screen size, best encoder found
     python obs-setup.py --buffer 300         # 5 min buffer (memory limit grows to match)
     python obs-setup.py --output "D:/Replays" --encoder nvenc-h264 --browser chrome
 """
@@ -14,7 +14,9 @@ import json
 import locale
 import math
 import os
+import re
 import shutil
+import subprocess
 import sys
 import uuid
 from datetime import datetime
@@ -78,12 +80,57 @@ def parse_args():
                    help="folder for saved replays (default ~/Videos/OBS Replays)")
     p.add_argument("--size", help="canvas and output size, e.g. 2560x1440 (default: main screen)")
     p.add_argument("--fps", type=int, default=60)
-    p.add_argument("--encoder", choices=ENCODERS, default="nvenc-av1")
+    p.add_argument("--encoder", choices=["auto", *ENCODERS], default="auto",
+                   help="auto (default) tests the GPU: NVENC AV1, then HEVC, then H.264, else x264 on the CPU")
     p.add_argument("--quality", type=int, default=28, help="constant quality, lower = better (default 28)")
     p.add_argument("--browser", action="append", choices=[k for k in APPS if k != "discord"],
                    help="browser to capture on the Browser track; repeat for several (default: chrome, firefox)")
     p.add_argument("--lang", choices=TRACK_NAMES, default=system_lang(), help="language of track and source names")
     return p.parse_args()
+
+
+NVENC_ORDER = [("nvenc-av1", "av1_nvenc"), ("nvenc-hevc", "hevc_nvenc"), ("nvenc-h264", "h264_nvenc")]
+
+
+def find_ffmpeg():
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+    packages = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WinGet", "Packages")
+    for root, _, files in os.walk(packages) if os.path.isdir(packages) else []:
+        if "ffmpeg.exe" in files:
+            return os.path.join(root, "ffmpeg.exe")
+    return None
+
+
+def run_quiet(args):
+    try:
+        return subprocess.run(args, capture_output=True, text=True, timeout=20,
+                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def detect_encoder():
+    """Picks the best encoder this PC can actually use. Returns (key, reason)."""
+    ffmpeg = find_ffmpeg()
+    if ffmpeg:
+        # A real 3-frame test encode: listing an encoder does not mean the GPU supports it.
+        for key, name in NVENC_ORDER:
+            r = run_quiet([ffmpeg, "-hide_banner", "-v", "error", "-f", "lavfi", "-i", "color=black:s=320x240:r=30:d=0.2",
+                           "-frames:v", "3", "-pix_fmt", "yuv420p", "-c:v", name, "-f", "null", "-"])
+            if r and r.returncode == 0:
+                return key, f"tested with FFmpeg ({name})"
+        return "x264", "no NVIDIA encoder passed a test encode"
+    r = run_quiet(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"])
+    gpu = r.stdout.strip().splitlines()[0] if r and r.returncode == 0 and r.stdout.strip() else ""
+    if not gpu:
+        return "x264", "no NVIDIA GPU found"
+    if re.search(r"RTX\s*[45]0\d\d|RTX\s*PRO|RTX\s*\d+\s*Ada", gpu, re.I):
+        return "nvenc-av1", gpu
+    if re.search(r"RTX\s*[23]0\d\d|GTX\s*1[06]\d\d", gpu, re.I):
+        return "nvenc-hevc", gpu
+    return "nvenc-h264", gpu
 
 
 def memory_mb(seconds):
@@ -213,6 +260,11 @@ def main():
     if sys.platform != "win32":
         sys.exit("This script configures OBS on Windows only.")
     a = parse_args()
+    if a.encoder == "auto":
+        a.encoder, why = detect_encoder()
+        print(f"Encoder: {a.encoder} ({why}). Override with --encoder.")
+        if a.encoder == "x264":
+            print("Tip: on an AMD or Intel GPU, pick its hardware encoder in OBS under Settings -> Output -> Recording.")
     width, height = map(int, a.size.lower().split("x")) if a.size else screen_size()
     saved = backup()
     if saved:

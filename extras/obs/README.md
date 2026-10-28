@@ -38,7 +38,7 @@ That creates a profile and a scene collection, both named **snip-clip Replay**, 
 
 - a 3-minute buffer, saved with **Alt+F10**
 - your main screen's resolution at 60 fps
-- NVENC AV1 at constant quality 28
+- the best encoder your PC supports, found by a quick test: NVENC AV1, then HEVC, then H.264, otherwise x264 on the CPU (constant quality 28)
 - replays saved to `Videos\OBS Replays`
 - Chrome and Firefox on the Browser track
 - track names in your Windows display language (English or Portuguese)
@@ -56,12 +56,12 @@ Combine any of these:
 | `--output` folder | `--output "D:/Replays"` | `~/Videos/OBS Replays` |
 | `--size` canvas and video size | `--size 1920x1080` | main screen |
 | `--fps` | `--fps 30` | `60` |
-| `--encoder` | `nvenc-hevc`, `nvenc-h264`, `x264` | `nvenc-av1` |
+| `--encoder` | `nvenc-av1`, `nvenc-hevc`, `nvenc-h264`, `x264` | `auto` |
 | `--quality` lower = better, bigger | `--quality 24` | `28` |
 | `--browser` (repeat for several) | `--browser firefox --browser zen` | `chrome`, `firefox` |
 | `--lang` track and source names | `--lang pt` | Windows language |
 
-Which encoder to use:
+`auto` tests your GPU with FFmpeg when it is installed, otherwise reads the NVIDIA card name. To pick one yourself:
 
 - **`nvenc-av1`** needs an NVIDIA RTX 40 series or newer.
 - **`nvenc-hevc`** or **`nvenc-h264`** for older NVIDIA cards.

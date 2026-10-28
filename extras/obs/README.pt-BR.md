@@ -40,7 +40,7 @@ Isso cria um perfil e uma coleção de cenas, ambos chamados **snip-clip Replay*
 
 - buffer de 3 minutos, salvo com **Alt+F10**
 - a resolução da sua tela principal a 60 fps
-- NVENC AV1 com qualidade constante 28
+- o melhor encoder que o seu PC suporta, descoberto num teste rápido: NVENC AV1, depois HEVC, depois H.264, senão x264 na CPU (qualidade constante 28)
 - replays salvos em `Vídeos\OBS Replays`
 - Chrome e Firefox na faixa Navegador
 
@@ -57,12 +57,12 @@ Combine as que quiser:
 | `--output` pasta | `--output "D:/Replays"` | `~/Videos/OBS Replays` |
 | `--size` tamanho da tela e do vídeo | `--size 1920x1080` | tela principal |
 | `--fps` | `--fps 30` | `60` |
-| `--encoder` | `nvenc-hevc`, `nvenc-h264`, `x264` | `nvenc-av1` |
+| `--encoder` | `nvenc-av1`, `nvenc-hevc`, `nvenc-h264`, `x264` | `auto` |
 | `--quality` menor = melhor e maior | `--quality 24` | `28` |
 | `--browser` (repita para vários) | `--browser firefox --browser zen` | `chrome`, `firefox` |
 | `--lang` nomes das faixas e fontes | `--lang pt` | idioma do Windows |
 
-Qual encoder usar:
+O `auto` testa sua GPU com o FFmpeg quando ele está instalado; senão, lê o nome da placa NVIDIA. Para escolher você mesmo:
 
 - **`nvenc-av1`** precisa de uma NVIDIA RTX série 40 ou mais nova.
 - **`nvenc-hevc`** ou **`nvenc-h264`** para placas NVIDIA mais antigas.

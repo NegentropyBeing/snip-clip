@@ -1,7 +1,7 @@
 // Bridges the platform-independent core to the Rust backend (src-tauri/src).
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { parseProbe, PROBE_ARGS, type Exec, type ExecResult, type FfmpegRunner, type MediaInfo, type ReleaseInfo } from "../core";
+import { parseProbe, PROBE_ARGS, type Exec, type ExecResult, type FfmpegRunner, type MediaInfo, type ReleaseInfo, type ReplayProfileFiles } from "../core";
 
 export interface FfmpegInfo {
   ffmpeg: string;
@@ -88,6 +88,32 @@ export const copyFiles = (paths: string[]) => invoke<void>("copy_files", { paths
 
 /** Published (non-draft) releases of the app on GitHub, newest first. */
 export const listReleases = () => invoke<ReleaseInfo[]>("list_releases");
+
+/** Where OBS is and what state the replay profile is in (spec §16). */
+export interface ObsStatus {
+  platform: "windows" | "linux" | "macos";
+  install: { kind: "native" | "flatpak"; executable: string | null; configDir: string } | null;
+  running: boolean;
+  profileInstalled: boolean;
+  autostart: boolean;
+  wayland: boolean;
+  appAudioPlugin: boolean;
+  vaapiDevice: string | null;
+}
+
+export const obsStatus = () => invoke<ObsStatus>("obs_status");
+/** The installed replay profile's files; null when it is not installed. */
+export const obsReadProfile = () => invoke<ReplayProfileFiles | null>("obs_read_profile");
+/** Backs up the current replay profile into `basic/backup-<stamp>` and writes `files`. Refused while OBS runs. */
+export const obsInstallProfile = (files: ReplayProfileFiles, stamp: string) => invoke<string | null>("obs_install_profile", { files, stamp });
+/** Deletes the replay profile; backups stay. Refused while OBS runs. */
+export const obsRemoveProfile = () => invoke<void>("obs_remove_profile");
+export const obsReadWebsocket = () => invoke<string | null>("obs_read_websocket");
+/** Refused while OBS runs. */
+export const obsWriteWebsocket = (contents: string) => invoke<void>("obs_write_websocket", { contents });
+export const obsSetAutostart = (enabled: boolean) => invoke<void>("obs_set_autostart", { enabled });
+/** Starts OBS in the replay profile with the replay buffer running; does nothing if OBS already runs. */
+export const obsLaunch = () => invoke<void>("obs_launch");
 
 /** URL the WebView can stream. Files outside the app cache must be allowed first (`allowAsset`). */
 export const assetUrl = (path: string) => convertFileSrc(path);

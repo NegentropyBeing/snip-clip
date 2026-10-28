@@ -1,6 +1,6 @@
 // Live preview: the <video> plays muted and is the clock; each audio track plays from its own
 // extracted file through a Web Audio gain node, re-synced to the video on every seek, stall and drift.
-import type { TrackMix } from "../core";
+import { cutAt, cutMix } from "../core";
 import { editor, useEditor } from "./store";
 
 const DRIFT_SEC = 0.12;
@@ -24,8 +24,9 @@ class Playback {
   private detachVideo: (() => void) | null = null;
 
   constructor() {
+    // Inside a cut the cut's override plays (FR-52); the clock moves `time` every frame.
     useEditor.subscribe((s, prev) => {
-      if (s.mix !== prev.mix) this.applyMix(s.mix);
+      if (s.mix !== prev.mix || s.cuts !== prev.cuts || s.selectedId !== prev.selectedId || s.time !== prev.time) this.applyMix();
     });
   }
 
@@ -77,7 +78,7 @@ class Playback {
       ctx.createMediaElementSource(el).connect(gain).connect(ctx.destination);
       return { el, gain };
     });
-    this.applyMix(useEditor.getState().mix);
+    this.applyMix();
     if (this.video) {
       this.tracks.forEach((t) => (t.el.currentTime = this.video!.currentTime));
       if (!this.video.paused) this.resyncAudio(true);
@@ -94,10 +95,13 @@ class Playback {
     this.tracks = [];
   }
 
-  private applyMix(mix: readonly TrackMix[]) {
+  private applyMix() {
+    const { mix, cuts, selectedId, time } = useEditor.getState();
+    const playing = cutMix(mix, cutAt(cuts, time, selectedId));
     this.tracks.forEach((t, i) => {
-      const m = mix[i];
-      t.gain.gain.value = m?.enabled ? m.volume : 0;
+      const m = playing[i];
+      const gain = m?.enabled ? m.volume : 0;
+      if (t.gain.gain.value !== gain) t.gain.gain.value = gain;
     });
   }
 

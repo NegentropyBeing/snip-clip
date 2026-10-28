@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { envelopeColumns, formatTimecode, laneHeight, mixEnvelope, normalizeCut, type AudioTrack, type Cut } from "../core";
+import { envelopeColumns, formatTimecode, laneHeight, mixEnvelope, mixRegions, normalizeCut, type AudioTrack, type Cut } from "../core";
 import { updateSettings, useApp } from "../editor/app";
 import { playback } from "../editor/playback";
 import { editor, useEditor } from "../editor/store";
@@ -50,7 +50,9 @@ export function Timeline() {
   const fitPps = duration > 0 ? viewW / duration : 1;
   const pps = zoom > 0 ? Math.max(zoom, fitPps) : fitPps;
   const contentW = Math.max(viewW, duration * pps);
-  const env = useMemo(() => (perTrack ? null : mixEnvelope(envelopes, mix)), [perTrack, envelopes, mix]);
+  // Inside each cut the waveform shows the cut's override (FR-53).
+  const regions = useMemo(() => mixRegions(mix, cuts, selectedId, duration), [mix, cuts, selectedId, duration]);
+  const env = useMemo(() => (perTrack ? null : mixEnvelope(envelopes, mix, regions)), [perTrack, envelopes, mix, regions]);
 
   useLayoutEffect(() => {
     const el = scroller.current;
@@ -78,10 +80,10 @@ export function Timeline() {
     const color = style.getPropertyValue("--waveform") || "#6366f1";
     const muted = style.getPropertyValue("--waveform-muted") || "#888";
 
-    const draw = (data: Float32Array, gain: number, top: number, height: number) => {
-      const peaks = envelopeColumns(data, from, from + viewW / pps, cols);
+    const columns = (data: Float32Array) => envelopeColumns(data, from, from + viewW / pps, cols);
+    const draw = (peaks: Float32Array, gain: number, top: number, height: number, first = 0, last = cols) => {
       const mid = top + height / 2;
-      for (let i = 0; i < cols; i++) {
+      for (let i = first; i < last; i++) {
         // sqrt lifts quiet game audio into view without flattening loud peaks.
         const h = Math.max(dpr * 0.5, Math.sqrt(Math.min(1, peaks[i] * gain)) * (height / 2) * 0.9);
         g.fillRect(i * dpr, mid - h, Math.max(1, dpr), h * 2);
@@ -91,26 +93,32 @@ export function Timeline() {
     if (env) {
       if (env.length === 0) return;
       g.fillStyle = color;
-      draw(env, 1, 0, c.height);
+      draw(columns(env), 1, 0, c.height);
       return;
     }
     const lane = laneH * dpr;
     tracks.forEach((tr, i) => {
       const data = envelopes[tr.index];
-      const m = mix[tr.index] ?? { enabled: true, volume: 1 };
       if (i > 0) {
         g.fillStyle = muted;
         g.globalAlpha = 0.35;
         g.fillRect(0, Math.round(i * lane), c.width, Math.max(1, Math.round(dpr / 2)));
       }
       if (!data) return;
+      const peaks = columns(data);
       // Enabled tracks show their level after the volume; excluded ones stay faint at their own level.
-      g.fillStyle = m.enabled ? color : muted;
-      g.globalAlpha = m.enabled ? 1 : 0.45;
-      draw(data, m.enabled ? m.volume : 1, i * lane, lane);
+      for (const r of regions) {
+        const first = Math.max(0, Math.floor((r.startSec - from) * pps));
+        const last = Math.min(cols, Math.ceil((r.endSec - from) * pps));
+        if (first >= last) continue;
+        const m = r.mix[tr.index] ?? { enabled: true, volume: 1 };
+        g.fillStyle = m.enabled ? color : muted;
+        g.globalAlpha = m.enabled ? 1 : 0.45;
+        draw(peaks, m.enabled ? m.volume : 1, i * lane, lane, first, last);
+      }
     });
     g.globalAlpha = 1;
-  }, [env, envelopes, mix, tracks, laneH, TRACK_H, scrollX, pps, viewW, duration]);
+  }, [env, envelopes, regions, tracks, laneH, TRACK_H, scrollX, pps, viewW, duration]);
 
   // Keep the playhead in view while playing.
   useEffect(() => {

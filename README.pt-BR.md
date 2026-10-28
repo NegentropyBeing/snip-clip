@@ -41,16 +41,22 @@ Ao abrir pela primeira vez, o snip-clip procura o FFmpeg no computador. Se não 
 
 Os clipes exportados vão para `Vídeos\Clips` (macOS: `Filmes/Clips`) e são copiados para a área de transferência, prontos para colar no Discord. As duas coisas podem ser mudadas em *Configurações* (`Ctrl+,`).
 
-## Gravando com o OBS (Windows)
+## Gravando com o OBS (Windows e Linux)
 
-A pasta [`extras/obs/`](extras/obs) configura o OBS Studio como um gravador de "replay instantâneo" com os arquivos que o snip-clip aproveita melhor: o replay buffer fica sempre ligado (salve com **Alt+F10**) e cada fonte vai para uma faixa de áudio própria com nome (*Mix, Jogo, Discord, Navegador, Microfone, Sistema*), para você poder tirar o Discord ou o navegador de um clipe depois.
+O snip-clip pode configurar o OBS Studio como um gravador de "replay instantâneo" com os arquivos que ele aproveita melhor: o **perfil de replay**. O replay buffer fica sempre ligado (salve com **Alt+F10**, por padrão) e cada fonte vai para uma faixa de áudio própria com nome (*Mix, Jogo, Discord, Navegador, Microfone, Sistema*), para você poder tirar o Discord ou o navegador de um clipe depois.
+
+Abra *Configurações → Gravação* (`Ctrl+,`) com o OBS fechado, escolha as opções e clique em **Instalar**:
+
+- **Básico:** duração do replay, pasta de replays, atalho para salvar, encoder (o Automático testa a sua placa de vídeo) e os navegadores cujo som vai para a faixa Navegador.
+- **Avançado:** limite de memória, resolução, taxa de quadros e qualidade.
+- **Início:** se você quiser, abre o OBS com o perfil quando você entra na sua conta. Vem desligado.
+
+A mesma aba muda o perfil depois (a versão anterior fica guardada na pasta de configurações do OBS), abre o OBS com ele e o remove. As faixas ganham nomes no idioma do app. A configuração *Pasta de abertura*, na aba Geral, faz o Abrir vídeo começar na pasta de replays.
+
+No **Linux** com Wayland, o OBS só ouve os atalhos com a janela dele em foco. No GNOME, o snip-clip adiciona o atalho para salvar aos atalhos de teclado do GNOME. Em outros ambientes Wayland, a aba mostra o comando para você criar o atalho (`snip-clip --save-replay`). Faixas separadas para o Discord e o navegador precisam do plugin [obs-pipewire-audio-capture](https://github.com/dimtpap/obs-pipewire-audio-capture); sem ele o perfil grava Mix, Microfone e Sistema. O perfil de replay ainda não está disponível no macOS.
 
 > [!IMPORTANT]
-> **Desligue o NVIDIA Instant Replay (ShadowPlay) antes de usar este perfil.** Os dois usam **Alt+F10** para salvar o replay, e com os dois ligados ficam dois replay buffers e dois encoders de GPU ocupados, dobrando o uso de RAM e de encoder. No app da NVIDIA, pressione **Alt+Z** e desligue o **Instant Replay**.
-
-**[Como instalar e ativar o perfil do OBS →](extras/obs/README.pt-BR.md)**: requisitos, opções (duração do buffer, encoder, pasta de saída, navegadores…), iniciar junto com o Windows e como desfazer.
-
-Para os nomes das faixas em português, crie o perfil com `--lang pt`.
+> **Windows: desligue o NVIDIA Instant Replay (ShadowPlay) antes de usar este perfil.** Os dois usam **Alt+F10** para salvar o replay, e com os dois ligados ficam dois replay buffers e dois encoders de GPU ocupados, dobrando o uso de RAM e de encoder. No app da NVIDIA, pressione **Alt+Z** e desligue o **Instant Replay**, ou escolha outro atalho para salvar.
 
 ## Privacidade
 
@@ -77,7 +83,6 @@ pnpm typecheck
 | `src-tauri/` | Backend em Rust: provisionamento do FFmpeg, execução de processos, área de transferência, persistência |
 | `tests/` | Testes de integração com um FFmpeg real |
 | `assets/brand/` | Logo: fonte do ícone do app, SVGs do badge e da tesoura, banners do README |
-| `extras/obs/` | Configuração opcional do perfil do OBS e atalho para gravar replays (Windows) |
 
 ## Licença
 

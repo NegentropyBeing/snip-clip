@@ -1,8 +1,8 @@
 # Roadmap
 
-## v0.1 — features done, testing before release
+## v0.1 — done
 
-Scope: [spec.md](spec.md).
+Scope: [spec.md](spec.md). Tested on Windows through `v0.1.0-beta.3`; the remaining platform tests were dropped, and the app ships unsigned.
 
 - [x] Core engine: presets, size budget, resolution ladder, encoder choice, FFmpeg commands, overshoot retry
 - [x] Unit tests + integration tests against real FFmpeg
@@ -20,20 +20,12 @@ Scope: [spec.md](spec.md).
 - [x] Update check against GitHub Releases
 - [x] CI: tests on push, installers for the 3 OSes on tags
 - [x] Per-track waveforms on the timeline
-
-### Before tagging 0.1.0
-
 - [x] First CI run and a test release (`v0.1.0-beta.3`) with installers for the 3 OSes
-- [ ] Linux: FFmpeg download (tar extraction) and clipboard copy (wl-copy / xclip) into Discord
-- [ ] Linux: OBS replay profile (`extras/obs`) on X11 and Wayland, with and without the PipeWire audio plugin, and saving with `obs-save-replay.py`
-- [ ] macOS: FFmpeg download, clipboard copy (osascript) and Gatekeeper on the unsigned app
 - [x] Windows: acceptance criteria in [spec.md §12](spec.md#12-critérios-de-aceite-da-v01), including pasting into Discord
-- [ ] Windows: FFmpeg download screen on a PC without FFmpeg
-- [ ] A PC without a dedicated GPU (CPU encoders)
 
 ## v0.2 — Recording tab (replay profile)
 
-Scope: [spec.md §16](spec.md#16-v02--gravação-perfil-de-replay), [ADR 0001](docs/adr/0001-snip-clip-manages-the-replay-profile.md). Branch `replay-profile`.
+Scope: [spec.md §16](spec.md#16-v02--gravação-perfil-de-replay), [ADR 0001](docs/adr/0001-snip-clip-manages-the-replay-profile.md).
 
 - [x] Core: replay profile generation in TypeScript (OBS `basic.ini`, encoder settings, scene collection) with tests, reading back an installed profile
 - [x] Backend: find OBS (Windows; Linux native or Flatpak), tell if it is running, read and write its files, backups, Linux audio plugin check
@@ -43,7 +35,7 @@ Scope: [spec.md §16](spec.md#16-v02--gravação-perfil-de-replay), [ADR 0001](d
 - [x] Save-replay hotkey: OBS on Windows and X11, GNOME custom shortcut on Wayland, instructions elsewhere
 - [x] `snip-clip --save-replay` through OBS's WebSocket server, without opening the window
 - [x] Open folder setting (follows the replays folder by default)
-- [ ] Remove `extras/obs/` and point the READMEs to the Recording tab
+- [x] Remove `extras/obs/` and point the READMEs to the Recording tab
 - [ ] Acceptance criteria in [spec.md §16.5](spec.md#165-critérios-de-aceite-da-v02)
 
 ## Later

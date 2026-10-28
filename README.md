@@ -41,14 +41,22 @@ On first launch snip-clip looks for FFmpeg on your computer. If there is none, i
 
 Exported clips go to `Videos/Clips` (macOS: `Movies/Clips`) and are copied to the clipboard, ready to paste into Discord. Both can be changed in *Settings* (`Ctrl+,`).
 
-## Recording with OBS (Windows)
+## Recording with OBS (Windows and Linux)
 
-[`extras/obs/`](extras/obs) sets OBS Studio up as an "instant replay" recorder whose files snip-clip handles best: the replay buffer is always on (save with **Alt+F10**), and every source goes to its own named audio track (*Mix, Game, Discord, Browser, Mic, System*), so you can drop Discord or the browser from a clip later.
+snip-clip can set OBS Studio up as an "instant replay" recorder whose files it handles best: the **replay profile**. The replay buffer is always on (save with **Alt+F10** by default), and every source goes to its own named audio track (*Mix, Game, Discord, Browser, Mic, System*), so you can drop Discord or the browser from a clip later.
+
+Open *Settings → Recording* (`Ctrl+,`) with OBS closed, choose the options and press **Install**:
+
+- **Basic:** replay length, replays folder, save hotkey, encoder (Automatic tests your graphics card) and the browsers whose sound goes to the Browser track.
+- **Advanced:** memory limit, resolution, frame rate and quality.
+- **Start:** optionally opens OBS with the profile when you sign in. It is off by default.
+
+The same tab changes the profile later (your previous version is backed up in OBS's settings folder), opens OBS with it, and removes it. Track names follow the app's language. The *Open folder* setting in the General tab makes the Open video dialog start in the replays folder.
+
+On **Linux**, OBS only hears its hotkeys while its window is focused on Wayland. On GNOME, snip-clip adds the save hotkey to GNOME's keyboard shortcuts. On other Wayland desktops the tab shows the command to bind (`snip-clip --save-replay`). Separate Discord and browser tracks need the [obs-pipewire-audio-capture](https://github.com/dimtpap/obs-pipewire-audio-capture) plugin; without it the profile records Mix, Mic and System. The replay profile is not available on macOS yet.
 
 > [!IMPORTANT]
-> **Turn off NVIDIA Instant Replay (ShadowPlay) before using this profile.** Both use **Alt+F10** to save a replay, and running both keeps two replay buffers and two GPU encoders busy, doubling RAM use and encoder load. In the NVIDIA app, press **Alt+Z** and switch **Instant Replay** off.
-
-**[How to install and turn on the OBS profile →](extras/obs/README.md)**: requirements, options (buffer length, encoder, output folder, browsers…), starting it with Windows, and how to undo it.
+> **Windows: turn off NVIDIA Instant Replay (ShadowPlay) before using this profile.** Both use **Alt+F10** to save a replay, and running both keeps two replay buffers and two GPU encoders busy, doubling RAM use and encoder load. In the NVIDIA app, press **Alt+Z** and switch **Instant Replay** off, or pick another save hotkey.
 
 ## Privacy
 
@@ -75,7 +83,6 @@ pnpm typecheck
 | `src-tauri/` | Rust backend: FFmpeg provisioning, process execution, clipboard, persistence |
 | `tests/` | Integration tests against a real FFmpeg |
 | `assets/brand/` | Logo: app icon source, badge and scissors SVGs, README banners |
-| `extras/obs/` | Optional OBS profile setup and launcher for recording replays (Windows) |
 
 ## License
 

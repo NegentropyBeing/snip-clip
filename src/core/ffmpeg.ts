@@ -25,7 +25,7 @@ export interface FfmpegJob {
 const GLOBAL_ARGS = ["-hide_banner", "-nostdin", "-y", "-nostats", "-progress", "pipe:1"];
 const UNLIMITED_CQ = 28;
 // HDR (PQ/HLG) -> SDR BT.709; needs an FFmpeg build with zimg.
-const TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv";
+export const TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv";
 
 const sec = (s: number) => s.toFixed(3);
 

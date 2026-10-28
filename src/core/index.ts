@@ -7,3 +7,7 @@ export * from "./ffmpeg";
 export * from "./export";
 export * from "./probe";
 export * from "./encoderProbe";
+export * from "./cuts";
+export * from "./preview";
+export * from "./project";
+export * from "./timecode";

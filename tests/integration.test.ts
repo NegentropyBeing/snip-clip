@@ -1,12 +1,13 @@
 /// <reference types="node" />
 // Runs the commands produced by src/core against a real FFmpeg. Skipped when FFmpeg is not on PATH.
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  detectEncoders, parseProbe, planOutput, PRESETS, PROBE_ARGS, runExport,
+  decodeEnvelope, detectEncoders, ENVELOPE_RATE, parseProbe, planOutput, PRESETS, previewAudioArgs, previewFiles,
+  PROBE_ARGS, proxyArgs, runExport,
   type Cut, type EncoderBackend, type Exec, type FfmpegRunner, type MediaInfo, type PresetId,
 } from "../src/core";
 
@@ -131,6 +132,24 @@ describe.skipIf(!hasFfmpeg)("FFmpeg integration", () => {
     const r = await run("discord-20-av1", sdr, false, two, { backend: "nvenc" });
     expect(r.video.codec_name).toBe("av1");
   }, 60_000);
+
+  it("extracts per-track preview audio and envelopes", async () => {
+    const files = previewFiles(dir, 3);
+    await nodeRunner.run(previewAudioArgs(mediaOf(sdr, false), files));
+    for (const f of files.audio) expect(probe(f).duration).toBeCloseTo(20, 0);
+    const env = decodeEnvelope(readFileSync(files.envelope[1]).buffer as ArrayBuffer);
+    expect(env.length / ENVELOPE_RATE).toBeCloseTo(20, 0);
+    // A full-scale-ish sine: mean |x| after low-pass is well above silence.
+    expect(env[ENVELOPE_RATE * 5]).toBeGreaterThan(0.05);
+  }, 60_000);
+
+  it("builds a 540p SDR preview proxy", async () => {
+    const out = join(dir, "proxy.mp4");
+    await nodeRunner.run(proxyArgs(mediaOf(hdr, true), out));
+    const r = probe(out);
+    expect(r.video).toMatchObject({ codec_name: "h264", height: 540 });
+    expect(r.audioCount).toBe(0);
+  }, 120_000);
 
   it("parses real ffprobe output", () => {
     const m = parseProbe(execFileSync("ffprobe", [...PROBE_ARGS, hdr]).toString(), hdr);

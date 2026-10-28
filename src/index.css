@@ -2,4 +2,32 @@
 
 :root {
   color-scheme: light dark;
+  --waveform: #6366f1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --waveform: #818cf8;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  user-select: none;
+}
+
+input,
+textarea {
+  user-select: text;
+}
+
+input[type="range"] {
+  accent-color: #6366f1;
 }

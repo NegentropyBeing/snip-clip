@@ -1,5 +1,5 @@
 // Bridges the platform-independent core to the Rust backend (src-tauri/src).
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { parseProbe, PROBE_ARGS, type Exec, type ExecResult, type FfmpegRunner, type MediaInfo } from "../core";
 
@@ -51,3 +51,18 @@ export function createRunner(jobId: string, onProgress?: (outTimeSec: number) =>
 
 export const pathExists = (path: string) => invoke<boolean>("path_exists", { path });
 export const ensureDir = (path: string) => invoke<void>("ensure_dir", { path });
+export const fileStat = (path: string) => invoke<{ size: number; mtimeMs: number }>("file_stat", { path });
+export const readText = (path: string) => invoke<string | null>("read_text", { path });
+export const writeText = (path: string, contents: string) => invoke<void>("write_text", { path, contents });
+export const removeFile = (path: string) => invoke<void>("remove_file", { path });
+export const pruneDirs = (dir: string, keep: number, except?: string) => invoke<number>("prune_dirs", { dir, keep, except });
+
+/** URL the WebView can stream. Files outside the app cache must be allowed first (`allowAsset`). */
+export const assetUrl = (path: string) => convertFileSrc(path);
+export const allowAsset = (path: string) => invoke<void>("allow_asset", { path });
+
+export async function readBytes(path: string): Promise<ArrayBuffer> {
+  const res = await fetch(assetUrl(path));
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+  return res.arrayBuffer();
+}

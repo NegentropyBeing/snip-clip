@@ -13,8 +13,14 @@ pub fn run() {
             ffmpeg::run_ffmpeg,
             ffmpeg::cancel_ffmpeg,
             files::file_size,
+            files::file_stat,
             files::path_exists,
             files::ensure_dir,
+            files::read_text,
+            files::write_text,
+            files::allow_asset,
+            files::prune_dirs,
+            files::remove_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -13,6 +13,49 @@ This sets OBS Studio up as an always-on "instant replay" recorder on Windows and
 | 5 | Mic | Default microphone |
 | 6 | System (all) | Everything the PC plays (fallback when a source is missed) |
 
+## Quick install
+
+Close OBS first. These commands download the scripts into a folder of their own, create the profile with the defaults, and start OBS with it at every login. Then press **Alt+F10** to save the last 3 minutes.
+
+### Windows
+
+Run these two commands in PowerShell if OBS or Python is missing, then open a new PowerShell window:
+
+```powershell
+winget install OBSProject.OBSStudio
+winget install Python.Python.3.12
+```
+
+Then:
+
+```powershell
+$d = "$env:LOCALAPPDATA\snip-clip-obs"; New-Item -ItemType Directory -Force $d | Out-Null
+foreach ($f in "obs-setup.py", "obs-replay.cmd") { Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/NegentropyBeing/snip-clip/main/extras/obs/$f" -OutFile "$d\$f" }
+py "$d\obs-setup.py"
+Copy-Item "$d\obs-replay.cmd" ([Environment]::GetFolderPath("Startup"))
+& "$d\obs-replay.cmd"
+```
+
+If you use NVIDIA Instant Replay, switch it off (Alt+Z): it also saves with Alt+F10.
+
+### Linux
+
+Install OBS, Python 3 and FFmpeg from your distribution, and the [PipeWire audio plugin](#before-you-start) if you want the Game, Discord and Browser tracks. Then:
+
+```sh
+d=~/.local/share/snip-clip-obs; mkdir -p "$d" && cd "$d"
+for f in obs-setup.py obs-save-replay.py obs-replay.sh; do curl -fsSLO "https://raw.githubusercontent.com/NegentropyBeing/snip-clip/main/extras/obs/$f"; done
+chmod +x obs-replay.sh && python3 obs-setup.py
+mkdir -p ~/.config/autostart && printf '[Desktop Entry]\nType=Application\nName=OBS replay (snip-clip)\nExec=%s/obs-replay.sh\n' "$d" > ~/.config/autostart/snip-clip-replay.desktop
+setsid -f ./obs-replay.sh >/dev/null 2>&1
+```
+
+On Wayland, also bind Alt+F10 to `python3 ~/.local/share/snip-clip-obs/obs-save-replay.py` in your desktop's keyboard settings ([why](#saving-with-altf10-on-wayland)).
+
+To change the buffer, encoder, browsers or anything else, run `obs-setup.py` again with the [options](#options).
+
+## Step by step
+
 The steps below are for Windows. On Linux, follow them with the changes in [Linux](#linux).
 
 ## 1. Before you start

@@ -15,6 +15,49 @@ Isto configura o OBS Studio no Windows e no Linux como um gravador de "replay in
 
 Os nomes acima são os da versão em português (`--lang pt`). Por padrão o script segue o idioma do sistema.
 
+## Instalação rápida
+
+Feche o OBS antes. Estes comandos baixam os scripts para uma pasta própria, criam o perfil com as opções padrão e fazem o OBS abrir com ele sempre que você entrar no sistema. Depois é só apertar **Alt+F10** para salvar os últimos 3 minutos.
+
+### Windows
+
+Se faltar o OBS ou o Python, rode estes dois comandos no PowerShell e depois abra uma nova janela do PowerShell:
+
+```powershell
+winget install OBSProject.OBSStudio
+winget install Python.Python.3.12
+```
+
+Depois:
+
+```powershell
+$d = "$env:LOCALAPPDATA\snip-clip-obs"; New-Item -ItemType Directory -Force $d | Out-Null
+foreach ($f in "obs-setup.py", "obs-replay.cmd") { Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/NegentropyBeing/snip-clip/main/extras/obs/$f" -OutFile "$d\$f" }
+py "$d\obs-setup.py"
+Copy-Item "$d\obs-replay.cmd" ([Environment]::GetFolderPath("Startup"))
+& "$d\obs-replay.cmd"
+```
+
+Se você usa o NVIDIA Instant Replay, desligue (Alt+Z): ele também salva com Alt+F10.
+
+### Linux
+
+Instale o OBS, o Python 3 e o FFmpeg pela sua distribuição, e o [plugin de áudio do PipeWire](#antes-de-começar) se quiser as faixas Jogo, Discord e Navegador. Depois:
+
+```sh
+d=~/.local/share/snip-clip-obs; mkdir -p "$d" && cd "$d"
+for f in obs-setup.py obs-save-replay.py obs-replay.sh; do curl -fsSLO "https://raw.githubusercontent.com/NegentropyBeing/snip-clip/main/extras/obs/$f"; done
+chmod +x obs-replay.sh && python3 obs-setup.py
+mkdir -p ~/.config/autostart && printf '[Desktop Entry]\nType=Application\nName=OBS replay (snip-clip)\nExec=%s/obs-replay.sh\n' "$d" > ~/.config/autostart/snip-clip-replay.desktop
+setsid -f ./obs-replay.sh >/dev/null 2>&1
+```
+
+No Wayland, ligue também o Alt+F10 a `python3 ~/.local/share/snip-clip-obs/obs-save-replay.py` nas configurações de teclado do seu ambiente gráfico ([por quê](#salvar-com-altf10-no-wayland)).
+
+Para mudar o buffer, o encoder, os navegadores ou qualquer outra coisa, rode o `obs-setup.py` de novo com as [opções](#opções).
+
+## Passo a passo
+
 Os passos abaixo são para o Windows. No Linux, siga-os com as mudanças da seção [Linux](#linux).
 
 ## 1. Antes de começar

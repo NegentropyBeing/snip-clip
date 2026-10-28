@@ -23,7 +23,7 @@ Scope: [spec.md](spec.md).
 
 ### Before tagging 0.1.0
 
-- [ ] First CI run and a test release (`v0.1.0-beta.3`) with installers for the 3 OSes
+- [x] First CI run and a test release (`v0.1.0-beta.3`) with installers for the 3 OSes
 - [ ] Linux: FFmpeg download (tar extraction) and clipboard copy (wl-copy / xclip) into Discord
 - [ ] macOS: FFmpeg download, clipboard copy (osascript) and Gatekeeper on the unsigned app
 - [x] Windows: acceptance criteria in [spec.md §12](spec.md#12-critérios-de-aceite-da-v01), including pasting into Discord

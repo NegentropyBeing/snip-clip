@@ -47,13 +47,23 @@ Acceptance criteria in [spec.md §16.5](spec.md#165-critérios-de-aceite-da-v02)
 - [ ] Linux on Wayland: `snip-clip --save-replay` saves with a notification; the tab shows the command on desktops other than GNOME
 - [ ] GNOME on Wayland: criterion 6, the hotkey registered with GNOME saves the replay while a game has focus
 
+## v0.3 — Cut override
+
+Scope: [spec.md §17](spec.md#17-v03--ajuste-do-corte). Branch `per-cut-mix`.
+
+- [ ] Core: cut overrides that keep only the tracks that differ from the mix, saved with the cuts, with tests
+- [ ] Preview and waveform follow the cut override inside each cut
+- [ ] Tracks panel: "Video | This cut" switch, "follows the video" marks, reset per track
+- [ ] Cut list: mark with a summary, "Remove override"
+- [ ] Export: mixed presets, separate tracks (silence where off), Original (track choice only)
+- [ ] Acceptance criteria in [spec.md §17.5](spec.md#175-critérios-de-aceite-da-v03)
+
 ## Later
 
 | Feature | Area |
 |---|---|
 | Vertical 9:16 crop, slow motion, text/captions, fades | Editing |
 | Discord **webhook** upload ("destinations" are planned in the v0.1 design) | After export |
-| Per-cut track and volume overrides | Mixing |
 | Montage transitions (fade / crossfade) | Montage |
 | Folder **gallery** with thumbnails | Opening |
 | **GIF** and WebM output | Output |

@@ -96,7 +96,7 @@ Ver [Roadmap](#13-roadmap-pós-v01). Em resumo: efeitos, texto, recorte vertical
 ### 5.3 Faixas e mixagem
 
 - **FR-7** Para cada faixa: **ativar/desativar** e **volume** (0–200%), com efeito imediato na prévia.
-- **FR-8** As escolhas de faixa e volume valem para **todos os cortes do vídeo** (modelo de dados preparado para ajuste por corte no futuro).
+- **FR-8** As escolhas de faixa e volume valem para **todos os cortes do vídeo** (a partir da v0.3, cada corte pode diferir: ver §17).
 - **FR-9** Forma de onda da **mixagem atual** sob a linha do tempo.
 
 ### 5.4 Marcação de cortes
@@ -241,7 +241,6 @@ Escolher o primeiro degrau cujo bitrate mínimo cabe no orçamento. Nunca aument
 |---|---|
 | Recorte vertical 9:16, câmera lenta, texto/legenda, fade | Escopo de edição |
 | Envio via **webhook** do Discord (arquitetura de "destinos" já prevista) | Pós-exportação |
-| Faixas e volumes **por corte** | Mixagem |
 | Transições na montagem (fade / crossfade) | Montagem |
 | **Galeria** com miniaturas de uma pasta (ex.: `F:\OBS Replays`) | Abertura |
 | Formatos **GIF** e WebM | Saída |
@@ -280,6 +279,7 @@ Escolher o primeiro degrau cujo bitrate mínimo cabe no orçamento. Nunca aument
 | Telemetria | Nenhuma, nunca |
 | Publicação | Repositório local primeiro; público após aprovação |
 | Perfil de replay (v0.2) | Gerenciado pelo snip-clip na aba Gravação; scripts Python removidos ([ADR 0001](docs/adr/0001-snip-clip-manages-the-replay-profile.md)) |
+| Ajuste do corte (v0.3) | Guarda só as faixas que diferem da mixagem; o resto segue o vídeo (§17) |
 
 ## 16. v0.2 — Gravação (perfil de replay)
 
@@ -325,3 +325,38 @@ Salvar replays com o snip-clip rodando em segundo plano; restaurar backups pela 
 6. Wayland GNOME: o atalho escolhido na aba salva o replay com um jogo em foco, e `snip-clip --save-replay` mostra a notificação.
 7. O diálogo *Abrir vídeo* começa na pasta de replays; após trocar a pasta de abertura, começa na nova.
 8. OBS ausente: a aba mostra como instalar e *Instalar* fica desabilitado.
+
+## 17. v0.3 — Ajuste do corte
+
+Cada **corte** pode diferir da **mixagem** do vídeo em algumas faixas: o **ajuste do corte** (ver [GLOSSARY.md](GLOSSARY.md)). Ex.: tirar o Discord só do corte em que alguém falou o que não devia.
+
+### 17.1 Modelo
+
+- **FR-47** O ajuste do corte guarda só as faixas que diferem da mixagem, cada uma com ativação e volume próprios. As demais faixas **seguem a mixagem do vídeo**, inclusive mudanças feitas depois (herança). O ajuste vale nos dois sentidos: o corte pode ligar uma faixa que o vídeo desligou.
+- **FR-48** Um corte novo nasce sem ajuste, mesmo com outro corte ajustado selecionado.
+- **FR-49** O ajuste é salvo com os cortes (FR-13) num campo opcional: projetos antigos abrem sem ajustes; uma versão anterior do snip-clip ignora o campo (e o perde no próximo salvamento), mas mantém os cortes.
+
+### 17.2 Interface
+
+- **FR-50** No painel **Faixas**, com um corte selecionado, aparece o seletor **Vídeo | Este corte**, que começa em *Vídeo*. Em *Este corte*, as faixas que seguem o vídeo aparecem esmaecidas com a marca "segue o vídeo"; mexer numa faixa cria o ajuste dela, e cada faixa ajustada tem ↺ para voltar a seguir o vídeo.
+- **FR-51** Na lista de cortes, um corte com ajuste mostra uma marca com a dica do que muda (ex.: "Discord desligado, Jogo 60%") e a ação **Remover ajuste**.
+
+### 17.3 Prévia e forma de onda
+
+- **FR-52** Dentro de um corte, a prévia toca a mixagem com o ajuste do corte; fora dos cortes, a mixagem do vídeo. Onde cortes se sobrepõem vale o corte selecionado; sem seleção, o que começa primeiro.
+- **FR-53** A forma de onda (mixada ou por faixa) mostra o ajuste no trecho de cada corte, pela mesma regra do FR-52.
+
+### 17.4 Exportação
+
+- **FR-54** Presets com 1 faixa mixada aplicam o ajuste de cada corte.
+- **FR-55** *Sem limite* com faixas separadas: uma faixa entra no arquivo se estiver ligada em pelo menos um corte; nos cortes em que está desligada, vira silêncio (a montagem continua possível).
+- **FR-56** *Original, sem recodificar*: vale a escolha de faixas de cada corte; volumes continuam ignorados.
+- **FR-57** Na montagem, o som muda bruscamente na emenda entre cortes com ajustes diferentes (transições continuam no roadmap).
+
+### 17.5 Critérios de aceite da v0.3
+
+1. Desligar o Discord só no corte 2: a prévia do corte 2 não tem Discord, a dos outros tem; o arquivo exportado do corte 2 também não.
+2. Depois do ajuste, baixar o Jogo para 60% no vídeo: o corte 2 também fica com o Jogo em 60% e continua sem Discord.
+3. ↺ numa faixa e *Remover ajuste* voltam a seguir o vídeo; a marca some da lista de cortes.
+4. Montagem com faixas separadas (*Sem limite*) e o Discord desligado só num corte: o arquivo tem a faixa do Discord, em silêncio naquele trecho.
+5. Fechar e reabrir o vídeo mantém os ajustes.

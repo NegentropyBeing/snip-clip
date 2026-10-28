@@ -20,6 +20,20 @@ _Avoid_: output folder, recordings folder
 Where the "Open video" dialog starts. Follows the replays folder unless set to another place.
 _Avoid_: default folder, videos folder
 
+### Editing
+
+**Cut** (pt-BR: *corte*):
+A part of a video, from a start to an end, that becomes one clip or one part of a montage.
+_Avoid_: clip (that is the exported file), segment
+
+**Mix** (pt-BR: *mixagem*):
+Which audio tracks of a video are on, and the volume of each.
+_Avoid_: volume track, audio settings
+
+**Cut override** (pt-BR: *ajuste do corte*):
+The tracks where one cut differs from the video's mix.
+_Avoid_: cut mix, per-cut volume track
+
 ### Exporting
 
 **Preset**:

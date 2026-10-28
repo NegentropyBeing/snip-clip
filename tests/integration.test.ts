@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   decodeEnvelope, detectEncoders, ENVELOPE_RATE, parseProbe, planOutput, PRESETS, previewAudioArgs, previewFiles,
-  PROBE_ARGS, proxyArgs, runExport,
+  PROBE_ARGS, proxyArgs, runExport, testEncodeArgs,
   type Cut, type EncoderBackend, type Exec, type FfmpegRunner, type MediaInfo, type PresetId,
 } from "../src/core";
 
@@ -54,7 +54,8 @@ function probe(path: string) {
 
 let sdr = "";
 let hdr = "";
-const encoders = hasFfmpeg ? execFileSync("ffmpeg", ["-hide_banner", "-encoders"]).toString() : "";
+// GPU encoders are listed by most builds even without the hardware (CI runners), so test-encode like the app does.
+const canEncode = (encoder: string) => hasFfmpeg && spawnSync("ffmpeg", testEncodeArgs(encoder)).status === 0;
 
 const nodeRunner: FfmpegRunner = {
   async run(args) {
@@ -123,12 +124,12 @@ describe.skipIf(!hasFfmpeg)("FFmpeg integration", () => {
     expect(r.audioCount).toBe(2);
   }, 60_000);
 
-  it.skipIf(!encoders.includes("h264_nvenc"))("NVENC single pass under the limit", async () => {
+  it.skipIf(!canEncode("h264_nvenc"))("NVENC single pass under the limit", async () => {
     const r = await run("discord-20", sdr, false, one, { backend: "nvenc" });
     expect(r.bytes).toBeLessThanOrEqual(20_000_000);
   }, 60_000);
 
-  it.skipIf(!encoders.includes("av1_nvenc"))("AV1 NVENC preset", async () => {
+  it.skipIf(!canEncode("av1_nvenc"))("AV1 NVENC preset", async () => {
     const r = await run("discord-20-av1", sdr, false, two, { backend: "nvenc" });
     expect(r.video.codec_name).toBe("av1");
   }, 60_000);

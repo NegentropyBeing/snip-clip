@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ENCODER_NAMES, PRESET_ORDER, type EncoderBackend, type EncoderPreference, type PresetId } from "../core";
 import { checkForUpdate, defaultExportDir, openSettings, updateSettings, useApp, type Language, type Theme } from "../editor/app";
+import { defaultOpenDir } from "../editor/recording";
 import { Button, IconButton, Row, Select } from "./common";
 import { CloseIcon } from "./icons";
 import { RecordingTab } from "./RecordingTab";
@@ -20,6 +21,7 @@ export function SettingsDialog() {
   const version = useApp((st) => st.version);
   const update = useApp((st) => st.update);
   const [defaultDir, setDefaultDir] = useState("");
+  const [defaultOpen, setDefaultOpen] = useState("");
   const [checking, setChecking] = useState<"idle" | "busy" | "none" | "failed">("idle");
   const [tab, setTab] = useState<Tab>("general");
 
@@ -32,9 +34,14 @@ export function SettingsDialog() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const pickDir = async () => {
-    const dir = await open({ directory: true, defaultPath: s.exportDir ?? defaultDir });
-    if (typeof dir === "string") await updateSettings({ exportDir: dir });
+  // Follows the replays folder, which the Recording tab may have just changed.
+  useEffect(() => {
+    if (tab === "general") void defaultOpenDir().then(setDefaultOpen);
+  }, [tab]);
+
+  const pickDir = async (key: "exportDir" | "openDir", current: string) => {
+    const dir = await open({ directory: true, defaultPath: current });
+    if (typeof dir === "string") await updateSettings({ [key]: dir });
   };
 
   const check = async () => {
@@ -73,15 +80,11 @@ export function SettingsDialog() {
           <div role="tabpanel" className="overflow-y-auto px-5"><RecordingTab /></div>
         ) : (
           <div role="tabpanel" className="divide-y divide-neutral-200 overflow-y-auto px-5 dark:divide-neutral-800">
-            <Row label={t("settings.exportDir")}>
-              <div className="flex items-center gap-2">
-                <code className="min-w-0 flex-1 truncate rounded-md border border-neutral-300 bg-neutral-100 px-2 py-1.5 font-mono text-xs dark:border-neutral-700 dark:bg-neutral-800" title={s.exportDir ?? defaultDir}>
-                  {s.exportDir ?? defaultDir}
-                </code>
-                <Button onClick={() => void pickDir()}>{t("settings.change")}</Button>
-                {s.exportDir && <Button variant="ghost" onClick={() => void updateSettings({ exportDir: null })}>{t("settings.reset")}</Button>}
-              </div>
-            </Row>
+            <FolderRow label={t("settings.openDir")} hint={t("settings.openDirHint")} value={s.openDir} fallback={defaultOpen}
+              onPick={() => void pickDir("openDir", s.openDir ?? defaultOpen)} onReset={() => void updateSettings({ openDir: null })} />
+
+            <FolderRow label={t("settings.exportDir")} value={s.exportDir} fallback={defaultDir}
+              onPick={() => void pickDir("exportDir", s.exportDir ?? defaultDir)} onReset={() => void updateSettings({ exportDir: null })} />
 
             <Row label={t("settings.defaultPreset")} hint={t("settings.defaultPresetHint")}>
               <Select<PresetId> value={s.defaultPreset} options={PRESET_ORDER.map((id) => [id, t(`presets.${id}`)])} onChange={(defaultPreset) => void updateSettings({ defaultPreset })} />
@@ -153,5 +156,23 @@ export function SettingsDialog() {
         </footer>
       </div>
     </div>
+  );
+}
+
+/** A folder setting: the chosen folder, or the default it follows when none is chosen. */
+function FolderRow({ label, hint, value, fallback, onPick, onReset }: {
+  label: string; hint?: string; value: string | null; fallback: string; onPick: () => void; onReset: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Row label={label} hint={hint}>
+      <div className="flex items-center gap-2">
+        <code className="min-w-0 flex-1 truncate rounded-md border border-neutral-300 bg-neutral-100 px-2 py-1.5 font-mono text-xs dark:border-neutral-700 dark:bg-neutral-800" title={value ?? fallback}>
+          {value ?? fallback}
+        </code>
+        <Button onClick={onPick}>{t("settings.change")}</Button>
+        {value && <Button variant="ghost" onClick={onReset}>{t("settings.reset")}</Button>}
+      </div>
+    </Row>
   );
 }

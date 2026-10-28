@@ -42,7 +42,7 @@ Scope: [spec.md §16](spec.md#16-v02--gravação-perfil-de-replay), [ADR 0001](d
 - [x] Missing OBS and missing Linux audio plugin: install instructions, nothing downloaded
 - [x] Save-replay hotkey: OBS on Windows and X11, GNOME custom shortcut on Wayland, instructions elsewhere
 - [x] `snip-clip --save-replay` through OBS's WebSocket server, without opening the window
-- [ ] Open folder setting (follows the replays folder by default)
+- [x] Open folder setting (follows the replays folder by default)
 - [ ] Remove `extras/obs/` and point the READMEs to the Recording tab
 - [ ] Acceptance criteria in [spec.md §16.5](spec.md#165-critérios-de-aceite-da-v02)
 

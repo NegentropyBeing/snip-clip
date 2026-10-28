@@ -8,7 +8,7 @@ import {
 import i18n from "../i18n";
 import {
   execFfmpeg, obsInstallProfile, obsReadProfile, obsReadWebsocket, obsRegisterGnomeShortcut, obsRemoveProfile,
-  obsSetAutostart, obsUnregisterGnomeShortcut, obsWriteWebsocket, type ObsStatus,
+  obsSetAutostart, obsUnregisterGnomeShortcut, obsWriteWebsocket, pathExists, type ObsStatus,
 } from "../platform/tauri";
 import { updateSettings, useApp } from "./app";
 
@@ -44,6 +44,30 @@ export async function loadReplayOptions(status: ObsStatus): Promise<{ options: R
   const files = status.install ? await obsReadProfile() : null;
   if (!files) return { options: defaults, installed: false };
   return { options: { ...defaults, ...readReplayProfile(files, recordingEnv(status).platform), lang: trackLang() }, installed: true };
+}
+
+/** The installed replay profile's replays folder, when it exists on disk. */
+async function installedReplaysFolder(): Promise<string | null> {
+  try {
+    const files = await obsReadProfile();
+    // The folder is read the same on every platform; OBS writes it with forward slashes.
+    let folder = files && readReplayProfile(files, "linux").replaysFolder;
+    if (!folder) return null;
+    if (navigator.userAgent.includes("Windows")) folder = folder.replace(/\//g, "\\");
+    return (await pathExists(folder)) ? folder : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Where the Open video dialog starts when no Open folder is set (FR-46). */
+export async function defaultOpenDir(): Promise<string> {
+  return (await installedReplaysFolder()) ?? videoDir();
+}
+
+/** Where the Open video dialog starts: the Open folder setting, else the replays folder, else Videos. */
+export async function openDir(): Promise<string> {
+  return useApp.getState().settings.openDir ?? defaultOpenDir();
 }
 
 let probed: Promise<Set<string>> | null = null;

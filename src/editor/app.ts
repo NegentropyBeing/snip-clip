@@ -13,6 +13,8 @@ export type Theme = "system" | "light" | "dark";
 export interface Settings {
   /** null = <system videos>/Clips (FR-19). */
   exportDir: string | null;
+  /** null = the replays folder, or the system videos folder without a replay profile (FR-46). */
+  openDir: string | null;
   encoder: EncoderPreference;
   /** Preset for videos opened for the first time. */
   defaultPreset: PresetId;
@@ -29,6 +31,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   exportDir: null,
+  openDir: null,
   encoder: "auto",
   defaultPreset: DEFAULT_PRESET,
   copyAfterExport: true,
@@ -77,6 +80,7 @@ export function parseSettings(raw: unknown): Settings {
   const d = DEFAULT_SETTINGS;
   return {
     exportDir: typeof r.exportDir === "string" && r.exportDir ? r.exportDir : d.exportDir,
+    openDir: typeof r.openDir === "string" && r.openDir ? r.openDir : d.openDir,
     encoder: pick(r.encoder, ["auto", "gpu", "cpu"] as const, d.encoder),
     defaultPreset: pick(r.defaultPreset, Object.keys(PRESETS) as PresetId[], d.defaultPreset),
     copyAfterExport: typeof r.copyAfterExport === "boolean" ? r.copyAfterExport : d.copyAfterExport,

@@ -4,6 +4,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ffmpegReady, initApp, openSettings, useApp } from "./editor/app";
+import { openDir } from "./editor/recording";
 import { closeMedia, forgetRecent, loadRecents, openMedia, useRecents } from "./editor/session";
 import { useEditor } from "./editor/store";
 import { Badge } from "./ui/Brand";
@@ -43,7 +44,8 @@ export default function App() {
 
   const pickFile = useCallback(async () => {
     if (!useApp.getState().ffmpeg) return;
-    const path = await open({ multiple: false, filters: [{ name: "Video", extensions: VIDEO_EXTENSIONS }] });
+    const defaultPath = await openDir().catch(() => undefined);
+    const path = await open({ multiple: false, defaultPath, filters: [{ name: "Video", extensions: VIDEO_EXTENSIONS }] });
     if (typeof path === "string") await openPath(path);
   }, [openPath]);
 

@@ -113,6 +113,8 @@ const ptBR: Messages = {
     title: "Configurações",
     close: "Fechar",
     tabs: { general: "Geral", recording: "Gravação" },
+    openDir: "Pasta de abertura",
+    openDirHint: "Onde o Abrir vídeo começa. Padrão: a pasta de replays do perfil de replay, ou Vídeos sem ele. Trocar aqui não muda o OBS.",
     exportDir: "Pasta de exportação",
     change: "Alterar…",
     reset: "Padrão",

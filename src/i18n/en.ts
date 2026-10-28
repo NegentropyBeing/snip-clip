@@ -111,6 +111,8 @@ const en = {
     title: "Settings",
     close: "Close",
     tabs: { general: "General", recording: "Recording" },
+    openDir: "Open folder",
+    openDirHint: "Where Open video starts. Default: the replay profile's replays folder, or Videos without one. Changing it here does not change OBS.",
     exportDir: "Export folder",
     change: "Change…",
     reset: "Default",

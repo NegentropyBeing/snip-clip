@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import {
-  DEFAULT_PRESET, moveItem, normalizeCut, setEdge, shiftCut,
+  clearOverride, DEFAULT_PRESET, moveItem, normalizeCut, overrideTrack, setEdge, shiftCut,
   type Cut, type MediaInfo, type OutputMode, type PresetId, type TrackMix,
 } from "../core";
 
@@ -93,6 +93,14 @@ export const editor = {
 
   setTrack(index: number, patch: Partial<TrackMix>) {
     set((s) => ({ mix: s.mix.map((m, i) => (i === index ? { ...m, ...patch } : m)) }));
+  },
+  /** Changes one track of a cut's override (FR-50). */
+  setCutTrack(id: string, index: number, patch: Partial<TrackMix>) {
+    set((s) => ({ cuts: s.cuts.map((c) => (c.id === id ? overrideTrack(c, s.mix, index, patch) : c)) }));
+  },
+  /** The track, or without an index the whole cut, follows the video's mix again (FR-50, FR-51). */
+  resetCutTrack(id: string, index?: number) {
+    set((s) => ({ cuts: s.cuts.map((c) => (c.id === id ? clearOverride(c, index) : c)) }));
   },
   setPreset: (presetId: PresetId) => set({ presetId }),
   setMode: (mode: OutputMode) => set({ mode }),

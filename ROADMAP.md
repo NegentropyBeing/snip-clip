@@ -53,8 +53,8 @@ Scope: [spec.md §17](spec.md#17-v03--ajuste-do-corte). Branch `per-cut-mix`.
 
 - [x] Core: cut overrides that keep only the tracks that differ from the mix, saved with the cuts, with tests
 - [x] Preview and waveform follow the cut override inside each cut
-- [ ] Tracks panel: "Video | This cut" switch, "follows the video" marks, reset per track
-- [ ] Cut list: mark with a summary, "Remove override"
+- [x] Tracks panel: "Video | This cut" switch, "follows the video" marks, reset per track
+- [x] Cut list: mark with a summary, "Remove override"
 - [x] Export: mixed presets, separate tracks (silence where off), Original (track choice only)
 - [ ] Acceptance criteria in [spec.md §17.5](spec.md#175-critérios-de-aceite-da-v03)
 

@@ -20,6 +20,8 @@ export const DownIcon = () => <Icon {...stroke}><path d="M12 5v14M6 13l6 6 6-6" 
 export const CloseIcon = () => <Icon {...stroke}><path d="M6 6l12 12M18 6 6 18" /></Icon>;
 export const ToStartIcon = () => <Icon {...stroke}><path d="M5 5v14M20 12H9M13 7l-5 5 5 5" /></Icon>;
 export const ToEndIcon = () => <Icon {...stroke}><path d="M19 5v14M4 12h11M11 7l5 5-5 5" /></Icon>;
+export const ResetIcon = () => <Icon {...stroke}><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4.5h4.5" /></Icon>;
+export const MixerIcon = () => <Icon {...stroke}><path d="M6 4v16M12 4v16M18 4v16" /><rect x="4" y="13" width="4" height="3" rx="1" fill="currentColor" /><rect x="10" y="7" width="4" height="3" rx="1" fill="currentColor" /><rect x="16" y="11" width="4" height="3" rx="1" fill="currentColor" /></Icon>;
 export const MinusIcon = () => <Icon {...stroke}><path d="M5 12h14" /></Icon>;
 export const PlusIcon = () => <Icon {...stroke}><path d="M12 5v14M5 12h14" /></Icon>;
 export const GearIcon = () => (

@@ -1,12 +1,17 @@
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import type { ReactNode } from "react";
-import { planOutput, PRESET_ORDER, PRESETS, totalDuration, type PresetId } from "../core";
+import { useState, type ReactNode } from "react";
+import {
+  cutMix, hasOverride, planOutput, PRESET_ORDER, PRESETS, totalDuration, type AudioTrack, type Cut, type PresetId, type TrackMix,
+} from "../core";
 import { cancelJob, clearFinished, copyToClipboard, enqueueExport, useExports, type ExportJob } from "../editor/exportQueue";
 import { playback } from "../editor/playback";
 import { editor, useEditor } from "../editor/store";
 import { Button, formatDuration, IconButton, Kbd, ProgressBar, TimeInput } from "./common";
-import { CloseIcon, DownIcon, ToEndIcon, ToStartIcon, UpIcon } from "./icons";
+import { CloseIcon, DownIcon, MixerIcon, ResetIcon, ToEndIcon, ToStartIcon, UpIcon } from "./icons";
+
+const NO_TRACKS: AudioTrack[] = [];
 
 function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -20,28 +25,56 @@ function Section({ title, children, action }: { title: string; children: ReactNo
   );
 }
 
+const trackName = (t: TFunction, tr: AudioTrack) => tr.title ?? t("editor.track", { n: tr.index + 1 });
+
+/** "Video | This cut": which mix the Tracks panel edits (FR-50). */
+function ScopeSwitch({ cut, onChange }: { cut: boolean; onChange: (cut: boolean) => void }) {
+  const { t } = useTranslation();
+  const item = (active: boolean) =>
+    `px-2 py-0.5 ${active ? "bg-brand-500 text-white" : "text-neutral-600 hover:bg-neutral-200 dark:text-neutral-300 dark:hover:bg-neutral-800"}`;
+  return (
+    <div role="radiogroup" aria-label={t("editor.mixScope")} className="flex overflow-hidden rounded-md border border-neutral-300 text-xs dark:border-neutral-700">
+      <button type="button" role="radio" aria-checked={!cut} className={item(!cut)} onClick={() => onChange(false)}>{t("editor.scopeVideo")}</button>
+      <button type="button" role="radio" aria-checked={cut} className={item(cut)} onClick={() => onChange(true)}>{t("editor.scopeCut")}</button>
+    </div>
+  );
+}
+
 export function TrackMixer() {
   const { t } = useTranslation();
   const tracks = useEditor((s) => s.media?.audioTracks ?? []);
   const mix = useEditor((s) => s.mix);
+  const selected = useEditor((s) => s.cuts.find((c) => c.id === s.selectedId) ?? null);
+  // The cut being edited; selecting another cut goes back to the video's mix.
+  const [scopeCutId, setScopeCutId] = useState<string | null>(null);
+  const cut = selected && scopeCutId === selected.id ? selected : null;
+  const shown = cut ? cutMix(mix, cut) : mix;
+  const setTrack = (index: number, patch: Partial<TrackMix>) =>
+    cut ? editor.setCutTrack(cut.id, index, patch) : editor.setTrack(index, patch);
+
   return (
-    <Section title={t("editor.tracks")}>
+    <Section
+      title={t("editor.tracks")}
+      action={selected && tracks.length > 0 && <ScopeSwitch cut={cut !== null} onChange={(c) => setScopeCutId(c ? selected.id : null)} />}
+    >
       {tracks.length === 0 && <p className="text-sm text-neutral-500">{t("editor.noTracks")}</p>}
-      <ul className="space-y-1">
+      {cut && <p className="mb-1 text-xs text-neutral-500">{t("editor.cutScopeHint")}</p>}
+      <ul className={`space-y-1 ${cut ? "border-l-2 border-brand-400 pl-2" : ""}`}>
         {tracks.map((tr) => {
-          const m = mix[tr.index] ?? { enabled: true, volume: 1 };
+          const m = shown[tr.index] ?? { enabled: true, volume: 1 };
+          const own = cut?.override?.[tr.index] !== undefined;
+          const follows = cut !== null && !own;
+          const faded = follows ? (m.enabled ? "opacity-60" : "opacity-35") : m.enabled ? "" : "opacity-50";
           return (
-            <li key={tr.index} className={`flex items-center gap-2 ${m.enabled ? "" : "opacity-50"}`}>
+            <li key={tr.index} className={`flex items-center gap-2 ${faded}`} title={follows ? t("editor.followsVideo") : undefined}>
               <input
                 type="checkbox"
                 checked={m.enabled}
                 title={t("editor.trackToggle")}
-                onChange={(e) => editor.setTrack(tr.index, { enabled: e.target.checked })}
+                onChange={(e) => setTrack(tr.index, { enabled: e.target.checked })}
                 className="h-4 w-4"
               />
-              <span className="w-24 truncate text-sm" title={tr.title ?? undefined}>
-                {tr.title ?? t("editor.track", { n: tr.index + 1 })}
-              </span>
+              <span className="w-24 truncate text-sm" title={tr.title ?? undefined}>{trackName(t, tr)}</span>
               <input
                 type="range"
                 min={0}
@@ -50,11 +83,16 @@ export function TrackMixer() {
                 value={Math.round(m.volume * 100)}
                 disabled={!m.enabled}
                 title={t("editor.volumeReset")}
-                onChange={(e) => editor.setTrack(tr.index, { volume: Number(e.target.value) / 100 })}
-                onDoubleClick={() => editor.setTrack(tr.index, { volume: 1 })}
+                onChange={(e) => setTrack(tr.index, { volume: Number(e.target.value) / 100 })}
+                onDoubleClick={() => setTrack(tr.index, { volume: 1 })}
                 className="min-w-0 flex-1"
               />
               <span className="w-10 text-right font-mono text-xs tabular-nums text-neutral-500">{Math.round(m.volume * 100)}%</span>
+              {cut && (
+                <IconButton label={t("editor.followVideo")} className="!h-5 !w-5 text-xs" disabled={!own} onClick={() => editor.resetCutTrack(cut.id, tr.index)}>
+                  <ResetIcon />
+                </IconButton>
+              )}
             </li>
           );
         })}
@@ -63,11 +101,23 @@ export function TrackMixer() {
   );
 }
 
+/** "Discord off, Game 60%": what a cut's override changes (FR-51). */
+function overrideSummary(t: TFunction, tracks: readonly AudioTrack[], cut: Cut): string {
+  return tracks
+    .filter((tr) => cut.override?.[tr.index])
+    .map((tr) => {
+      const m = cut.override![tr.index];
+      return m.enabled ? t("editor.overrideVolume", { name: trackName(t, tr), pct: Math.round(m.volume * 100) }) : t("editor.overrideOff", { name: trackName(t, tr) });
+    })
+    .join(", ");
+}
+
 export function CutList() {
   const { t } = useTranslation();
   const cuts = useEditor((s) => s.cuts);
   const selectedId = useEditor((s) => s.selectedId);
   const duration = useEditor((s) => s.media?.durationSec ?? 0);
+  const tracks = useEditor((s) => s.media?.audioTracks ?? NO_TRACKS);
 
   const addAtPlayhead = () => {
     const now = useEditor.getState().time;
@@ -110,6 +160,17 @@ export function CutList() {
               <IconButton label={t("editor.setEndHere")} className="!h-5 !w-5 text-xs" onClick={() => editor.setCutEdge(c.id, "end", useEditor.getState().time)}><ToEndIcon /></IconButton>
               <span className="ml-auto tabular-nums">{formatDuration(c.endSec - c.startSec)}</span>
             </div>
+            {hasOverride(c) && (
+              <div
+                className="mt-0.5 ml-5 flex min-w-0 items-center gap-1 rounded bg-brand-50 pl-1 text-xs text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                title={overrideSummary(t, tracks, c)}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MixerIcon />
+                <span className="min-w-0 flex-1 truncate">{overrideSummary(t, tracks, c)}</span>
+                <IconButton label={t("editor.removeOverride")} className="!h-5 !w-5 text-xs" onClick={() => editor.resetCutTrack(c.id)}><CloseIcon /></IconButton>
+              </div>
+            )}
           </li>
         ))}
       </ol>

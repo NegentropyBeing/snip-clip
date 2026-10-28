@@ -1,5 +1,7 @@
 # OBS replay profile — how to install and use
 
+**English** · [Português](README.pt-BR.md)
+
 This sets OBS Studio up as an always-on "instant replay" recorder on Windows: the last few minutes are kept in memory and saved to a file when you press **Alt+F10**. Every audio source gets its own named track, so in clip-snip you can drop Discord or the browser from a clip, or turn your mic down.
 
 | Track | Name | Contents |

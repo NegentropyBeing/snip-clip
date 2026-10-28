@@ -7,6 +7,8 @@
 
 # clip-snip
 
+**English** · [Português](README.pt-BR.md)
+
 Cut one or many micro-clips from game recordings (OBS replays, NVIDIA app, anything FFmpeg reads) and export them ready to share — by default as **Discord-size files (≤ 20 MB)**.
 
 > **Status:** early preview (**v0.1.0-beta.1**, Windows). It needs **FFmpeg on your `PATH`** for now — the in-app download, clipboard copy and settings screen are still to come. See [ROADMAP.md](ROADMAP.md) and [spec.md](spec.md) (Portuguese).
@@ -19,6 +21,14 @@ Cut one or many micro-clips from game recordings (OBS replays, NVIDIA app, anyth
 - Size presets (Discord 20 MB, Nitro 50 / 500 MB, unlimited, lossless copy) that are **guaranteed** to stay under the limit.
 - Copy the exported file to the clipboard, ready to paste into Discord.
 - Windows, Linux and macOS · English and Portuguese.
+
+## Install (Windows beta)
+
+1. Install FFmpeg and make sure it is on your `PATH`, for example with `winget install Gyan.FFmpeg`. Open a new terminal and check with `ffmpeg -version`.
+2. Download `clip-snip_<version>_x64-setup.exe` from [Releases](https://github.com/NegentropyBeing/clip-snip/releases) and run it.
+3. The installer is not code-signed yet, so Windows SmartScreen may warn. Choose *More info → Run anyway*.
+
+Exported clips go to `Videos\Clips`.
 
 ## Recording with OBS (Windows)
 

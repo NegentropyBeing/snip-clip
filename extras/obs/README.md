@@ -39,7 +39,7 @@ That creates a profile and a scene collection, both named **snip-clip Replay**, 
 - a 3-minute buffer, saved with **Alt+F10**
 - your main screen's resolution at 60 fps
 - the best encoder your PC supports, found by a quick test: NVENC AV1, then HEVC, then H.264, otherwise x264 on the CPU (constant quality 28)
-- replays saved to `Videos\OBS Replays`
+- replays saved as MKV to `Videos\OBS Replays` (MKV keeps the track names, MP4 drops them)
 - Chrome and Firefox on the Browser track
 - track names in your Windows display language (English or Portuguese)
 
@@ -96,7 +96,7 @@ OBS will now start with Windows, ready to save replays. You can also double-clic
 ## 5. Check that it works
 
 1. Play something for a few seconds: a game, a Discord call, a video in the browser.
-2. Press **Alt+F10**. A file named `Replay <date> <time>.mp4` appears in the output folder.
+2. Press **Alt+F10**. A file named `Replay <date> <time>.mkv` appears in the output folder.
 3. Open it in snip-clip: the tracks should be listed by name and each one should play only its own audio.
 
 To see which source goes to which track, go to OBS → *Edit → Advanced Audio Properties*.

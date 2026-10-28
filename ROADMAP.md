@@ -19,14 +19,16 @@ Scope: [spec.md](spec.md).
 - [x] Logo, app icon and palette
 - [x] Update check against GitHub Releases
 - [x] CI: tests on push, installers for the 3 OSes on tags
+- [x] Per-track waveforms on the timeline
 
 ### Before tagging 0.1.0
 
 - [ ] First CI run and a test release (`v0.1.0-beta.3`) with installers for the 3 OSes
 - [ ] Linux: FFmpeg download (tar extraction) and clipboard copy (wl-copy / xclip) into Discord
 - [ ] macOS: FFmpeg download, clipboard copy (osascript) and Gatekeeper on the unsigned app
-- [ ] Windows: paste exported files into Discord; FFmpeg download screen on a PC without FFmpeg
-- [ ] Acceptance criteria in [spec.md §12](spec.md#12-critérios-de-aceite-da-v01)
+- [x] Windows: acceptance criteria in [spec.md §12](spec.md#12-critérios-de-aceite-da-v01), including pasting into Discord
+- [ ] Windows: FFmpeg download screen on a PC without FFmpeg
+- [ ] A PC without a dedicated GPU (CPU encoders)
 
 ## Later
 
@@ -38,7 +40,8 @@ Scope: [spec.md](spec.md).
 | Montage transitions (fade / crossfade) | Montage |
 | Folder **gallery** with thumbnails | Opening |
 | **GIF** and WebM output | Output |
-| Per-track waveforms | Timeline |
+| Lock export resolution / fps by hand (spec §6.2) | Export |
+| HDR → SDR: check the tone mapping against a reference player; gamut mapping for very saturated colors | Export |
 | Auto-update (Tauri updater) | Distribution |
 | Stream-copy montage (needs temporary segments) | Export |
 

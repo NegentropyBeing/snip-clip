@@ -151,7 +151,7 @@ FilenameFormatting=%CCYY.%MM.%DD - %hh.%mm.%ss
 [AdvOut]
 RecType=Standard
 RecFilePath={a.output}
-RecFormat2=mp4
+RecFormat2=mkv
 RecEncoder={encoder}
 RecAudioEncoder=ffmpeg_aac
 RecTracks=63

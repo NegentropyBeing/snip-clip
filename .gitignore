@@ -34,3 +34,7 @@ coverage
 
 # Logo drafts and generator (final assets live in assets/brand)
 logo candidates/
+
+# Python bytecode
+__pycache__/
+*.pyc

@@ -70,6 +70,11 @@ const en = {
     zoomOut: "Zoom out",
     fit: "Fit",
     hint: "Drag to create a cut · Ctrl+wheel to zoom",
+    waveform: "Waveform",
+    mix: "Mix",
+    tracks: "Tracks",
+    mixHint: "One waveform for what the export will sound like",
+    tracksHint: "One waveform per audio track; click a name to include or exclude it",
   },
   export: {
     title: "Export",

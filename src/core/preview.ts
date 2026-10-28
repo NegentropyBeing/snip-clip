@@ -70,6 +70,11 @@ export function mixEnvelope(tracks: readonly (Float32Array | undefined)[], mix: 
   return out;
 }
 
+/** Height of each per-track waveform lane: they share `minTotal`, but never get thinner than 22 px. */
+export function laneHeight(tracks: number, minTotal: number): number {
+  return Math.max(22, Math.floor(minTotal / Math.max(1, tracks)));
+}
+
 /** Peak per output column over [fromSec, toSec). */
 export function envelopeColumns(env: Float32Array, fromSec: number, toSec: number, columns: number): Float32Array {
   const out = new Float32Array(columns);

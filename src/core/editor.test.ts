@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MIN_CUT_SEC, moveItem, normalizeCut, setEdge, shiftCut, totalDuration } from "./cuts";
-import { decodeEnvelope, envelopeColumns, mixEnvelope, previewAudioArgs, previewFiles, proxyArgs } from "./preview";
+import { decodeEnvelope, envelopeColumns, laneHeight, mixEnvelope, previewAudioArgs, previewFiles, proxyArgs } from "./preview";
 import { mediaKey, parseProject } from "./project";
 import { formatTimecode, parseTimecode } from "./timecode";
 import type { MediaInfo } from "./types";
@@ -82,6 +82,13 @@ describe("preview", () => {
     const env = decodeEnvelope(new Int16Array([16384, -32768, 0, 0]).buffer);
     expect(Array.from(env)).toEqual([0.5, 1, 0, 0]);
     expect(Array.from(envelopeColumns(env, 0, 0.004, 2))).toEqual([1, 0]);
+  });
+
+  it("splits the waveform area into lanes no thinner than 22 px", () => {
+    expect(laneHeight(2, 72)).toBe(36);
+    expect(laneHeight(3, 72)).toBe(24);
+    expect(laneHeight(6, 72)).toBe(22);
+    expect(laneHeight(0, 72)).toBe(72);
   });
 });
 

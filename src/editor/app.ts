@@ -21,6 +21,8 @@ export interface Settings {
   language: Language;
   theme: Theme;
   checkUpdates: boolean;
+  /** Timeline waveform: the current mix, or one lane per audio track. */
+  waveform: "mix" | "tracks";
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   language: "system",
   theme: "system",
   checkUpdates: true,
+  waveform: "mix",
 };
 
 export interface UpdateNotice {
@@ -77,6 +80,7 @@ export function parseSettings(raw: unknown): Settings {
     language: pick(r.language, ["system", "en", "pt-BR"] as const, d.language),
     theme: pick(r.theme, ["system", "light", "dark"] as const, d.theme),
     checkUpdates: typeof r.checkUpdates === "boolean" ? r.checkUpdates : d.checkUpdates,
+    waveform: pick(r.waveform, ["mix", "tracks"] as const, d.waveform),
   };
 }
 

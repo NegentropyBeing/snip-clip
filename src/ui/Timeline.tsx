@@ -1,14 +1,17 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { envelopeColumns, formatTimecode, mixEnvelope, normalizeCut, type Cut } from "../core";
+import { envelopeColumns, formatTimecode, laneHeight, mixEnvelope, normalizeCut, type AudioTrack, type Cut } from "../core";
+import { updateSettings, useApp } from "../editor/app";
 import { playback } from "../editor/playback";
 import { editor, useEditor } from "../editor/store";
 import { IconButton } from "./common";
 import { MinusIcon, PlusIcon } from "./icons";
 
 const RULER_H = 20;
-const TRACK_H = 72;
+/** Height of the waveform area in mix view; per-track lanes share at least this much. */
+const WAVE_H = 72;
 const DRAG_THRESHOLD_PX = 4;
+const NO_TRACKS: AudioTrack[] = [];
 const MAX_PPS = 400;
 const TICK_STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1800];
 const MIN_TICK_PX = 70;
@@ -38,11 +41,16 @@ export function Timeline() {
   const zoom = useEditor((s) => s.zoom);
   const envelopes = useEditor((s) => s.envelopes);
   const mix = useEditor((s) => s.mix);
+  const tracks = useEditor((s) => s.media?.audioTracks ?? NO_TRACKS);
+  const waveformView = useApp((s) => s.settings.waveform);
+  const perTrack = waveformView === "tracks" && tracks.length > 1;
+  const laneH = perTrack ? laneHeight(tracks.length, WAVE_H) : WAVE_H;
+  const TRACK_H = perTrack ? laneH * tracks.length : WAVE_H;
 
   const fitPps = duration > 0 ? viewW / duration : 1;
   const pps = zoom > 0 ? Math.max(zoom, fitPps) : fitPps;
   const contentW = Math.max(viewW, duration * pps);
-  const env = useMemo(() => mixEnvelope(envelopes, mix), [envelopes, mix]);
+  const env = useMemo(() => (perTrack ? null : mixEnvelope(envelopes, mix)), [perTrack, envelopes, mix]);
 
   useLayoutEffect(() => {
     const el = scroller.current;
@@ -53,7 +61,7 @@ export function Timeline() {
     return () => ro.disconnect();
   }, []);
 
-  // Waveform of the current mix, drawn only for the visible window.
+  // Waveform of the current mix, or one lane per track, drawn only for the visible window.
   useEffect(() => {
     const c = canvas.current;
     if (!c) return;
@@ -63,18 +71,46 @@ export function Timeline() {
     const g = c.getContext("2d");
     if (!g) return;
     g.clearRect(0, 0, c.width, c.height);
-    if (env.length === 0 || duration === 0) return;
+    if (duration === 0) return;
     const cols = Math.max(1, Math.floor(viewW));
     const from = scrollX / pps;
-    const peaks = envelopeColumns(env, from, from + viewW / pps, cols);
-    g.fillStyle = getComputedStyle(c).getPropertyValue("--waveform") || "#6366f1";
-    const mid = c.height / 2;
-    for (let i = 0; i < cols; i++) {
-      // sqrt lifts quiet game audio into view without flattening loud peaks.
-      const h = Math.max(dpr * 0.5, Math.sqrt(peaks[i]) * mid * 0.95);
-      g.fillRect(i * dpr, mid - h, Math.max(1, dpr), h * 2);
+    const style = getComputedStyle(c);
+    const color = style.getPropertyValue("--waveform") || "#6366f1";
+    const muted = style.getPropertyValue("--waveform-muted") || "#888";
+
+    const draw = (data: Float32Array, gain: number, top: number, height: number) => {
+      const peaks = envelopeColumns(data, from, from + viewW / pps, cols);
+      const mid = top + height / 2;
+      for (let i = 0; i < cols; i++) {
+        // sqrt lifts quiet game audio into view without flattening loud peaks.
+        const h = Math.max(dpr * 0.5, Math.sqrt(Math.min(1, peaks[i] * gain)) * (height / 2) * 0.9);
+        g.fillRect(i * dpr, mid - h, Math.max(1, dpr), h * 2);
+      }
+    };
+
+    if (env) {
+      if (env.length === 0) return;
+      g.fillStyle = color;
+      draw(env, 1, 0, c.height);
+      return;
     }
-  }, [env, scrollX, pps, viewW, duration]);
+    const lane = laneH * dpr;
+    tracks.forEach((tr, i) => {
+      const data = envelopes[tr.index];
+      const m = mix[tr.index] ?? { enabled: true, volume: 1 };
+      if (i > 0) {
+        g.fillStyle = muted;
+        g.globalAlpha = 0.35;
+        g.fillRect(0, Math.round(i * lane), c.width, Math.max(1, Math.round(dpr / 2)));
+      }
+      if (!data) return;
+      // Enabled tracks show their level after the volume; excluded ones stay faint at their own level.
+      g.fillStyle = m.enabled ? color : muted;
+      g.globalAlpha = m.enabled ? 1 : 0.45;
+      draw(data, m.enabled ? m.volume : 1, i * lane, lane);
+    });
+    g.globalAlpha = 1;
+  }, [env, envelopes, mix, tracks, laneH, TRACK_H, scrollX, pps, viewW, duration]);
 
   // Keep the playhead in view while playing.
   useEffect(() => {
@@ -196,6 +232,23 @@ export function Timeline() {
       <div className="flex items-center gap-1 px-3 pt-1 text-xs text-neutral-500">
         <span>{t("timeline.hint")}</span>
         <div className="ml-auto flex items-center">
+          {tracks.length > 1 && (
+            <div className="mr-2 grid grid-cols-2 rounded-md bg-neutral-200 p-0.5 dark:bg-neutral-800" role="radiogroup" aria-label={t("timeline.waveform")}>
+              {(["mix", "tracks"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={waveformView === v}
+                  title={t(`timeline.${v}Hint`)}
+                  onClick={() => void updateSettings({ waveform: v })}
+                  className={`rounded px-2 py-0.5 ${waveformView === v ? "bg-white text-neutral-800 shadow-sm dark:bg-neutral-600 dark:text-neutral-100" : ""}`}
+                >
+                  {t(`timeline.${v}`)}
+                </button>
+              ))}
+            </div>
+          )}
           <IconButton label={t("timeline.zoomOut")} onClick={() => zoomAround(0.67)}><MinusIcon /></IconButton>
           <button type="button" className="rounded px-1.5 py-0.5 hover:bg-neutral-200 dark:hover:bg-neutral-800" onClick={() => editor.setZoom(0)}>
             {t("timeline.fit")}
@@ -268,6 +321,27 @@ export function Timeline() {
           <div className="pointer-events-none absolute top-0 w-px bg-red-500" style={{ left: time * pps, height: RULER_H + TRACK_H }}>
             <div className="absolute -left-1.5 top-0 h-0 w-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-red-500" />
           </div>
+
+          {/* Track names stay at the left edge while scrolling; a click includes or excludes the track. */}
+          {perTrack && tracks.map((tr, i) => {
+            const m = mix[tr.index] ?? { enabled: true, volume: 1 };
+            return (
+              <button
+                key={tr.index}
+                type="button"
+                title={t("editor.trackToggle")}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => editor.setTrack(tr.index, { enabled: !m.enabled })}
+                className={`absolute z-10 max-w-40 truncate rounded bg-neutral-50/85 px-1 text-left text-[10px] leading-4 font-medium hover:bg-neutral-50 dark:bg-neutral-900/85 dark:hover:bg-neutral-900 ${
+                  m.enabled ? "text-neutral-700 dark:text-neutral-200" : "text-neutral-400 line-through dark:text-neutral-500"
+                }`}
+                style={{ left: scrollX + 4, top: RULER_H + i * laneH + 2 }}
+              >
+                {tr.title ?? t("editor.track", { n: tr.index + 1 })}
+                {m.enabled && m.volume !== 1 && <span className="ml-1 font-mono text-neutral-500">{Math.round(m.volume * 100)}%</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

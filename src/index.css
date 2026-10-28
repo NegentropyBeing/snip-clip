@@ -80,11 +80,13 @@
   --brand-from: var(--color-brand-500);
   --brand-to: var(--color-brand2-400);
   --waveform: var(--color-brand-500);
+  --waveform-muted: var(--color-neutral-400);
 }
 
 :root.dark {
   color-scheme: dark;
   --waveform: var(--color-brand-400);
+  --waveform-muted: var(--color-neutral-500);
 }
 
 :root:not(.dark) {

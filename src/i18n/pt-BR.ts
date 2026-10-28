@@ -72,6 +72,11 @@ const ptBR: Messages = {
     zoomOut: "Afastar",
     fit: "Ajustar",
     hint: "Arraste para criar um corte · Ctrl+roda para zoom",
+    waveform: "Forma de onda",
+    mix: "Mixagem",
+    tracks: "Faixas",
+    mixHint: "Uma forma de onda com o som que vai para a exportação",
+    tracksHint: "Uma forma de onda por faixa de áudio; clique num nome para incluir ou tirar a faixa",
   },
   export: {
     title: "Exportar",

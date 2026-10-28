@@ -36,7 +36,16 @@ Scope: [spec.md §16](spec.md#16-v02--gravação-perfil-de-replay), [ADR 0001](d
 - [x] `snip-clip --save-replay` through OBS's WebSocket server, without opening the window
 - [x] Open folder setting (follows the replays folder by default)
 - [x] Remove `extras/obs/` and point the READMEs to the Recording tab
-- [ ] Acceptance criteria in [spec.md §16.5](spec.md#165-critérios-de-aceite-da-v02)
+- [x] Test release (`v0.2.0-beta.2`) with installers for the 3 OSes; it creates the replays folder, which `beta.1` did not
+
+### Before tagging 0.2.0
+
+Acceptance criteria in [spec.md §16.5](spec.md#165-critérios-de-aceite-da-v02):
+
+- [ ] Windows: criteria 1–4, 7 and 8 (install, read back, OBS open, remove, Open folder, missing OBS)
+- [ ] Linux Mint (Cinnamon, X11): criteria 2–5, 7 and 8, Flatpak OBS with and without the audio plugin
+- [ ] Linux on Wayland: `snip-clip --save-replay` saves with a notification; the tab shows the command on desktops other than GNOME
+- [ ] GNOME on Wayland: criterion 6, the hotkey registered with GNOME saves the replay while a game has focus
 
 ## Later
 

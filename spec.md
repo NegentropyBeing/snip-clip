@@ -279,3 +279,49 @@ Escolher o primeiro degrau cujo bitrate mínimo cabe no orçamento. Nunca aument
 | Codec padrão Discord | H.264; AV1 opcional |
 | Telemetria | Nenhuma, nunca |
 | Publicação | Repositório local primeiro; público após aprovação |
+| Perfil de replay (v0.2) | Gerenciado pelo snip-clip na aba Gravação; scripts Python removidos ([ADR 0001](docs/adr/0001-snip-clip-manages-the-replay-profile.md)) |
+
+## 16. v0.2 — Gravação (perfil de replay)
+
+O snip-clip passa a instalar e gerenciar o **perfil de replay** no OBS (ver [GLOSSARY.md](GLOSSARY.md) e [ADR 0001](docs/adr/0001-snip-clip-manages-the-replay-profile.md)), substituindo os scripts de `extras/obs/`, que são removidos. Windows e Linux; no macOS a aba aparece com o aviso "ainda não disponível".
+
+### 16.1 Aba Gravação
+
+As Configurações passam a ter as abas **Geral** e **Gravação**.
+
+- **FR-35** Estado: OBS encontrado (nativo ou Flatpak no Linux), aberto ou fechado; perfil de replay instalado ou não; no Linux, plugin de áudio por app presente ou não.
+- **FR-36** Instalar e reconfigurar o perfil de replay. Campos visíveis: duração do buffer, pasta de replays, encoder (Automático ou um da lista), navegadores. Em *Avançado* (recolhido): limite de memória, resolução, fps, qualidade. Os nomes das faixas seguem o idioma do snip-clip.
+- **FR-37** Com o perfil de replay instalado, o formulário é preenchido com os valores lidos dos arquivos do OBS (a fonte da verdade), não de uma cópia do snip-clip.
+- **FR-38** Instalar, reconfigurar e remover são recusados com o OBS aberto, com pedido para fechá-lo. A versão anterior do perfil é copiada para backup a cada instalação.
+- **FR-39** Remover: apaga o perfil e a coleção de cenas, desliga o início automático e desliga o servidor WebSocket só se foi o snip-clip que o ligou. Os backups ficam.
+- **FR-40** Início automático: "Abrir o OBS com o perfil de replay quando eu entrar na minha conta", **desmarcado** por padrão. Botão **Abrir o OBS agora**.
+- **FR-41** Encoder automático: usa o teste de encoders que o snip-clip já faz (AV1 → HEVC → H.264; NVENC antes de VAAPI; senão x264).
+- **FR-42** OBS não encontrado: mostra como instalar (Windows: `winget` e obsproject.com; Linux: Flathub ou pacote da distribuição) e desabilita *Instalar*. Nada é baixado.
+- **FR-43** Linux sem o plugin obs-pipewire-audio-capture: aviso destacado com o comando de instalação para o OBS encontrado (Flatpak ou nativo). A instalação continua possível, com 3 faixas (Mix, Microfone, Sistema).
+
+### 16.2 Atalho para salvar o replay
+
+- **FR-44** Campo **Atalho para salvar o replay** (padrão Alt+F10), aplicado conforme o ambiente:
+  - Windows e Linux X11: nas configurações do perfil de replay no OBS;
+  - Linux Wayland no GNOME: atalho personalizado do GNOME que chama `snip-clip --save-replay`, avisando se a combinação já estiver em uso (o GNOME usa Alt+F10 para maximizar);
+  - outros ambientes Wayland: comando pronto para copiar e instruções.
+- **FR-45** `snip-clip --save-replay` salva o replay pelo servidor WebSocket do OBS sem abrir a janela do app e mostra uma notificação com o resultado. No Wayland, instalar o perfil de replay liga esse servidor (com senha; uma senha existente é mantida).
+
+### 16.3 Pasta de abertura
+
+- **FR-46** Configuração **Pasta de abertura** na aba Geral: onde o diálogo *Abrir vídeo* começa. Segue a pasta de replays do perfil de replay; sem perfil, a pasta de Vídeos do sistema; pode ser trocada por outra sem mudar o OBS.
+
+### 16.4 Fora de escopo da v0.2
+
+Salvar replays com o snip-clip rodando em segundo plano; restaurar backups pela interface; destacar replays novos (fica com a galeria); registrar o atalho automaticamente no KDE; perfil de replay no macOS.
+
+### 16.5 Critérios de aceite da v0.2
+
+1. Windows sem perfil: instalar pela aba, abrir o OBS pela aba, salvar com o atalho e abrir o replay no snip-clip com 6 faixas nomeadas.
+2. Mudar o buffer direto no OBS e ver o valor novo na aba; reconfigurar pela aba e ver o backup criado.
+3. Com o OBS aberto, instalar e remover são recusados.
+4. Remover deixa o OBS sem o perfil de replay e sem início automático.
+5. Linux X11 e Wayland (GNOME), OBS nativo e Flatpak, com e sem o plugin: o perfil funciona; sem o plugin aparece o aviso e o replay tem 3 faixas.
+6. Wayland GNOME: o atalho escolhido na aba salva o replay com um jogo em foco, e `snip-clip --save-replay` mostra a notificação.
+7. O diálogo *Abrir vídeo* começa na pasta de replays; após trocar a pasta de abertura, começa na nova.
+8. OBS ausente: a aba mostra como instalar e *Instalar* fica desabilitado.

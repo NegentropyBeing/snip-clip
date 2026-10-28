@@ -31,6 +31,21 @@ Scope: [spec.md](spec.md).
 - [ ] Windows: FFmpeg download screen on a PC without FFmpeg
 - [ ] A PC without a dedicated GPU (CPU encoders)
 
+## v0.2 — Recording tab (replay profile)
+
+Scope: [spec.md §16](spec.md#16-v02--gravação-perfil-de-replay), [ADR 0001](docs/adr/0001-snip-clip-manages-the-replay-profile.md). Branch `replay-profile`.
+
+- [ ] Core: replay profile generation in TypeScript (OBS `basic.ini`, encoder settings, scene collection) with tests, reading back an installed profile
+- [ ] Backend: find OBS (Windows; Linux native or Flatpak), tell if it is running, read and write its files, backups, Linux audio plugin check
+- [ ] Settings split into General and Recording tabs
+- [ ] Recording tab: status, install / reconfigure (basic + Advanced), remove, open OBS now, start at login (off by default)
+- [ ] Missing OBS and missing Linux audio plugin: install instructions, nothing downloaded
+- [ ] Save-replay hotkey: OBS on Windows and X11, GNOME custom shortcut on Wayland, instructions elsewhere
+- [ ] `snip-clip --save-replay` through OBS's WebSocket server, without opening the window
+- [ ] Open folder setting (follows the replays folder by default)
+- [ ] Remove `extras/obs/` and point the READMEs to the Recording tab
+- [ ] Acceptance criteria in [spec.md §16.5](spec.md#165-critérios-de-aceite-da-v02)
+
 ## Later
 
 | Feature | Area |
@@ -45,5 +60,7 @@ Scope: [spec.md](spec.md).
 | HDR → SDR: check the tone mapping against a reference player; gamut mapping for very saturated colors | Export |
 | Auto-update (Tauri updater) | Distribution |
 | Stream-copy montage (needs temporary segments) | Export |
+| Replay profile on macOS (ScreenCaptureKit, VideoToolbox) | Recording |
+| Register the save-replay hotkey on KDE Plasma | Recording |
 
 Out of scope: batch library compression — that is a separate project.

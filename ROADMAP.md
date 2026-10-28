@@ -43,7 +43,7 @@ Scope: [spec.md §16](spec.md#16-v02--gravação-perfil-de-replay), [ADR 0001](d
 Acceptance criteria in [spec.md §16.5](spec.md#165-critérios-de-aceite-da-v02):
 
 - [ ] Windows: criteria 1–4, 7 and 8 (install, read back, OBS open, remove, Open folder, missing OBS)
-- [ ] Linux Mint (Cinnamon, X11): criteria 2–5, 7 and 8, Flatpak OBS with and without the audio plugin
+- [x] Linux Mint (Cinnamon, X11): criteria 2–5, 7 and 8, Flatpak OBS with and without the audio plugin
 - [ ] Linux on Wayland: `snip-clip --save-replay` saves with a notification; the tab shows the command on desktops other than GNOME
 - [ ] GNOME on Wayland: criterion 6, the hotkey registered with GNOME saves the replay while a game has focus
 
@@ -56,7 +56,7 @@ Scope: [spec.md §17](spec.md#17-v03--ajuste-do-corte).
 - [x] Tracks panel: "Video | This cut" switch, "follows the video" marks, reset per track
 - [x] Cut list: mark with a summary, "Remove override"
 - [x] Export: mixed presets, separate tracks (silence where off), Original (track choice only)
-- [x] Acceptance criteria in [spec.md §17.5](spec.md#175-critérios-de-aceite-da-v03)
+- [x] Acceptance criteria in [spec.md §17.5](spec.md#175-critérios-de-aceite-da-v03), on Windows and on Linux Mint (`v0.3.0-beta.1`)
 
 ## Later
 

@@ -114,9 +114,21 @@ pub async fn locate(app: &AppHandle) -> Option<FfmpegInfo> {
             }
         }
     }
-    let ffmpeg = which::which("ffmpeg").ok()?;
-    let ffprobe = which::which("ffprobe").ok()?;
-    try_pair(ffmpeg, ffprobe, "system").await
+    if let (Ok(ffmpeg), Ok(ffprobe)) = (which::which("ffmpeg"), which::which("ffprobe")) {
+        if let Some(info) = try_pair(ffmpeg, ffprobe, "system").await {
+            return Some(info);
+        }
+    }
+    // Not on the inherited PATH: try the current saved PATH and common install folders.
+    for dir in crate::search::extra_dirs() {
+        let pair = (dir.join(Tool::Ffmpeg.file_name()), dir.join(Tool::Ffprobe.file_name()));
+        if pair.0.is_file() {
+            if let Some(info) = try_pair(pair.0, pair.1, "system").await {
+                return Some(info);
+            }
+        }
+    }
+    None
 }
 
 fn resolved(state: &FfmpegState, tool: Tool) -> Result<PathBuf, String> {

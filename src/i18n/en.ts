@@ -6,8 +6,12 @@ const en = {
   ffmpeg: {
     missingTitle: "FFmpeg is required",
     missingBody: "snip-clip uses FFmpeg to read, preview and export videos. It was not found on this computer.",
-    missingHow: "For now, install FFmpeg and make sure it is on your PATH, then retry. An in-app download is coming.",
+    missingHow: "On Windows, install it with this command in Terminal, then click Retry:",
+    missingOther: "On macOS: brew install ffmpeg · On Linux: your package manager (e.g. sudo apt install ffmpeg). An in-app download is coming.",
+    copy: "Copy",
+    copied: "Copied",
     retry: "Retry",
+    stillMissing: "Still not found. Close snip-clip and open it again, or restart the computer.",
   },
   welcome: {
     title: "Cut clips from your recordings",

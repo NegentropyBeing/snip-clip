@@ -8,8 +8,12 @@ const ptBR: Messages = {
   ffmpeg: {
     missingTitle: "O FFmpeg é necessário",
     missingBody: "O snip-clip usa o FFmpeg para ler, pré-visualizar e exportar vídeos. Ele não foi encontrado neste computador.",
-    missingHow: "Por enquanto, instale o FFmpeg e deixe-o no PATH, depois tente de novo. O download pelo app está a caminho.",
+    missingHow: "No Windows, instale com este comando no Terminal e depois clique em Tentar de novo:",
+    missingOther: "No macOS: brew install ffmpeg · No Linux: o gerenciador de pacotes (ex.: sudo apt install ffmpeg). O download pelo app está a caminho.",
+    copy: "Copiar",
+    copied: "Copiado",
     retry: "Tentar de novo",
+    stillMissing: "Ainda não encontrado. Feche o snip-clip e abra de novo, ou reinicie o computador.",
   },
   welcome: {
     title: "Recorte clipes das suas gravações",

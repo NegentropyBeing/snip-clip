@@ -81,15 +81,41 @@ function Centered({ children }: { children: ReactNode }) {
   return <div className="flex flex-1 items-center justify-center p-8">{children}</div>;
 }
 
+const WINGET_COMMAND = "winget install Gyan.FFmpeg";
+
 function FfmpegMissing() {
   const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [stillMissing, setStillMissing] = useState(false);
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(WINGET_COMMAND).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  const retry = async () => {
+    setRetrying(true);
+    await initApp();
+    setRetrying(false);
+    setStillMissing(!useApp.getState().ffmpeg);
+  };
+
   return (
     <Centered>
-      <div className="max-w-md space-y-3">
+      <div className="max-w-lg space-y-3">
         <h1 className="text-xl font-semibold">{t("ffmpeg.missingTitle")}</h1>
         <p className="text-neutral-600 dark:text-neutral-300">{t("ffmpeg.missingBody")}</p>
-        <p className="text-sm text-neutral-500">{t("ffmpeg.missingHow")}</p>
-        <Button variant="primary" onClick={() => void initApp()}>{t("ffmpeg.retry")}</Button>
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">{t("ffmpeg.missingHow")}</p>
+        <div className="flex items-center gap-2 rounded-md border border-neutral-300 bg-neutral-100 py-1.5 pl-3 pr-1.5 dark:border-neutral-700 dark:bg-neutral-800">
+          <code className="flex-1 select-all font-mono text-sm">{WINGET_COMMAND}</code>
+          <Button variant="ghost" className="!py-1 text-xs" onClick={() => void copy()}>
+            {copied ? t("ffmpeg.copied") : t("ffmpeg.copy")}
+          </Button>
+        </div>
+        <p className="text-xs text-neutral-500">{t("ffmpeg.missingOther")}</p>
+        <Button variant="primary" disabled={retrying} onClick={() => void retry()}>{t("ffmpeg.retry")}</Button>
+        {stillMissing && <p className="text-sm text-amber-700 dark:text-amber-300">{t("ffmpeg.stillMissing")}</p>}
       </div>
     </Centered>
   );

@@ -12,7 +12,7 @@ export function Kbd({ children }: { children: ReactNode }) {
 type Variant = "primary" | "ghost" | "subtle";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-indigo-600 text-white hover:bg-indigo-500 disabled:hover:bg-indigo-600",
+  primary: "bg-brand-gradient text-white shadow-sm hover:brightness-110 disabled:hover:brightness-100",
   subtle: "bg-neutral-200 text-neutral-800 hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700",
   ghost: "text-neutral-600 hover:bg-neutral-200 dark:text-neutral-300 dark:hover:bg-neutral-800",
 };
@@ -28,7 +28,15 @@ export function Button({ variant = "subtle", className = "", ...props }: ButtonH
 }
 
 export function IconButton({ label, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
-  return <Button variant="ghost" title={label} aria-label={label} className={`h-7 w-7 !px-0 !py-0 ${className}`} {...props} />;
+  return (
+    <Button
+      variant="ghost"
+      title={label}
+      aria-label={label}
+      className={`h-7 w-7 !px-0 !py-0 !text-brand-600 hover:!bg-brand-500/10 dark:!text-brand-400 ${className}`}
+      {...props}
+    />
+  );
 }
 
 /** Time field: shows mm:ss.mmm, accepts any format parseTimecode understands, commits on Enter/blur. */
@@ -48,7 +56,7 @@ export function TimeInput({ value, onCommit, label }: { value: number; onCommit:
     <input
       aria-label={label}
       title={label}
-      className="w-[5.5rem] rounded border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs tabular-nums hover:border-neutral-300 focus:border-indigo-500 focus:outline-none dark:hover:border-neutral-600"
+      className="w-[5.5rem] rounded border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs tabular-nums hover:border-neutral-300 focus:border-brand-500 focus:outline-none dark:hover:border-neutral-600"
       value={text}
       onFocus={() => setEditing(true)}
       onChange={(e) => setText(e.target.value)}
@@ -68,7 +76,7 @@ export function TimeInput({ value, onCommit, label }: { value: number; onCommit:
 export function ProgressBar({ value }: { value: number }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
-      <div className="h-full rounded-full bg-indigo-500 transition-[width]" style={{ width: `${Math.round(value * 100)}%` }} />
+      <div className="h-full rounded-full bg-brand-gradient transition-[width]" style={{ width: `${Math.round(value * 100)}%` }} />
     </div>
   );
 }

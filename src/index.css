@@ -1,13 +1,87 @@
 @import "tailwindcss";
 
+/* Brand palette. Utilities (bg-brand-500, text-brand2-400, neutrals…) read the --p-* values
+   below; brand -> brand2 is the logo gradient. */
+@theme {
+  --color-brand-50: var(--p-brand-50);
+  --color-brand-100: var(--p-brand-100);
+  --color-brand-200: var(--p-brand-200);
+  --color-brand-300: var(--p-brand-300);
+  --color-brand-400: var(--p-brand-400);
+  --color-brand-500: var(--p-brand-500);
+  --color-brand-600: var(--p-brand-600);
+  --color-brand-700: var(--p-brand-700);
+  --color-brand-800: var(--p-brand-800);
+  --color-brand-900: var(--p-brand-900);
+  --color-brand2-50: var(--p-brand2-50);
+  --color-brand2-100: var(--p-brand2-100);
+  --color-brand2-200: var(--p-brand2-200);
+  --color-brand2-300: var(--p-brand2-300);
+  --color-brand2-400: var(--p-brand2-400);
+  --color-brand2-500: var(--p-brand2-500);
+  --color-brand2-600: var(--p-brand2-600);
+  --color-brand2-700: var(--p-brand2-700);
+  --color-brand2-800: var(--p-brand2-800);
+  --color-brand2-900: var(--p-brand2-900);
+  --color-neutral-50: var(--p-neutral-50);
+  --color-neutral-100: var(--p-neutral-100);
+  --color-neutral-200: var(--p-neutral-200);
+  --color-neutral-300: var(--p-neutral-300);
+  --color-neutral-400: var(--p-neutral-400);
+  --color-neutral-500: var(--p-neutral-500);
+  --color-neutral-600: var(--p-neutral-600);
+  --color-neutral-700: var(--p-neutral-700);
+  --color-neutral-800: var(--p-neutral-800);
+  --color-neutral-900: var(--p-neutral-900);
+  --color-neutral-950: var(--p-neutral-950);
+}
+
+:root {
+  /* Palette "aurora": violet -> cyan. */
+  --p-brand-50: #f3f0ff;
+  --p-brand-100: #e7e0ff;
+  --p-brand-200: #d2c5ff;
+  --p-brand-300: #b39dff;
+  --p-brand-400: #9678ff;
+  --p-brand-500: #7c5cff;
+  --p-brand-600: #6a43f0;
+  --p-brand-700: #5833cc;
+  --p-brand-800: #482ba5;
+  --p-brand-900: #3c2786;
+  --p-brand2-50: #ecfeff;
+  --p-brand2-100: #cffafe;
+  --p-brand2-200: #a5f3fc;
+  --p-brand2-300: #67e8f9;
+  --p-brand2-400: #22d3ee;
+  --p-brand2-500: #06b6d4;
+  --p-brand2-600: #0891b2;
+  --p-brand2-700: #0e7490;
+  --p-brand2-800: #155e75;
+  --p-brand2-900: #164e63;
+  --p-neutral-50: oklch(0.985 0.006 285);
+  --p-neutral-100: oklch(0.967 0.008 285);
+  --p-neutral-200: oklch(0.922 0.01 285);
+  --p-neutral-300: oklch(0.87 0.012 285);
+  --p-neutral-400: oklch(0.708 0.014 285);
+  --p-neutral-500: oklch(0.556 0.014 285);
+  --p-neutral-600: oklch(0.439 0.014 285);
+  --p-neutral-700: oklch(0.371 0.014 285);
+  --p-neutral-800: oklch(0.269 0.014 285);
+  --p-neutral-900: oklch(0.2 0.014 285);
+  --p-neutral-950: oklch(0.145 0.012 285);
+}
+
 :root {
   color-scheme: light dark;
-  --waveform: #6366f1;
+  /* Logo gradient ends (badge SVG). */
+  --brand-from: var(--color-brand-500);
+  --brand-to: var(--color-brand2-400);
+  --waveform: var(--color-brand-500);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --waveform: #818cf8;
+    --waveform: var(--color-brand-400);
   }
 }
 
@@ -28,6 +102,12 @@ textarea {
   user-select: text;
 }
 
-input[type="range"] {
-  accent-color: #6366f1;
+input[type="range"],
+input[type="checkbox"] {
+  accent-color: var(--color-brand-500);
+}
+
+/* Logo gradient for filled accents (primary buttons, progress, badges). */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(135deg, var(--color-brand-600), var(--color-brand2-600));
 }

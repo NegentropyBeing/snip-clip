@@ -1,8 +1,15 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark.png">
+    <img src="assets/brand/banner-light.png" alt="clip-snip" width="640">
+  </picture>
+</p>
+
 # clip-snip
 
 Cut one or many micro-clips from game recordings (OBS replays, NVIDIA app, anything FFmpeg reads) and export them ready to share — by default as **Discord-size files (≤ 20 MB)**.
 
-> **Status:** early development, targeting **v0.1**. Not usable yet. See [spec.md](spec.md) (Portuguese) and [ROADMAP.md](ROADMAP.md).
+> **Status:** early preview (**v0.1.0**, Windows). It needs **FFmpeg on your `PATH`** for now — the in-app download, clipboard copy and settings screen are still to come. See [ROADMAP.md](ROADMAP.md) and [spec.md](spec.md) (Portuguese).
 
 ## What it will do (v0.1)
 
@@ -46,6 +53,7 @@ pnpm typecheck
 | `src/` | React UI |
 | `src-tauri/` | Rust backend: FFmpeg provisioning, process execution, clipboard, persistence |
 | `tests/` | Integration tests against a real FFmpeg |
+| `assets/brand/` | Logo: app icon source, badge and scissors SVGs, README banners |
 | `extras/obs/` | Optional OBS profile setup and launcher for recording replays (Windows) |
 
 ## License

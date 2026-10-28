@@ -5,6 +5,7 @@ import { playback } from "../editor/playback";
 import { buildProxy } from "../editor/session";
 import { editor, useEditor } from "../editor/store";
 import { IconButton, Kbd } from "./common";
+import { FrameBackIcon, FrameForwardIcon, PauseIcon, PlayIcon } from "./icons";
 
 export function Player() {
   const { t } = useTranslation();
@@ -74,15 +75,21 @@ export function Transport() {
 
   return (
     <div className="flex items-center gap-1 border-t border-neutral-200 px-3 py-1.5 dark:border-neutral-800">
-      <IconButton label={`${t("player.frameBack")} (←)`} onClick={() => playback.step(-1)}>⏮</IconButton>
-      <IconButton label={`${playing ? t("player.pause") : t("player.play")} (Space)`} onClick={() => playback.toggle()} className="text-base">
-        {playing ? "⏸" : "▶"}
-      </IconButton>
-      <IconButton label={`${t("player.frameForward")} (→)`} onClick={() => playback.step(1)}>⏭</IconButton>
+      <IconButton label={`${t("player.frameBack")} (←)`} onClick={() => playback.step(-1)}><FrameBackIcon /></IconButton>
+      <button
+        type="button"
+        title={`${playing ? t("player.pause") : t("player.play")} (Space)`}
+        aria-label={playing ? t("player.pause") : t("player.play")}
+        onClick={() => playback.toggle()}
+        className="bg-brand-gradient mx-1 inline-flex h-9 w-9 items-center justify-center rounded-full text-lg text-white shadow-sm transition hover:brightness-110"
+      >
+        {playing ? <PauseIcon /> : <span className="translate-x-px"><PlayIcon /></span>}
+      </button>
+      <IconButton label={`${t("player.frameForward")} (→)`} onClick={() => playback.step(1)}><FrameForwardIcon /></IconButton>
       <span className="ml-2 font-mono text-sm tabular-nums">
         {formatTimecode(time)} <span className="text-neutral-400">/ {formatTimecode(duration)}</span>
       </span>
-      {playing && rate !== 1 && <span className="ml-2 rounded bg-indigo-600 px-1.5 text-xs font-semibold text-white">{rate}×</span>}
+      {playing && rate !== 1 && <span className="ml-2 rounded bg-brand-gradient px-1.5 text-xs font-semibold text-white">{rate}×</span>}
       <div className="ml-auto flex items-center gap-1.5 text-xs">
         <button type="button" className="flex items-center gap-1 rounded px-1.5 py-1 hover:bg-neutral-200 dark:hover:bg-neutral-800" onClick={() => editor.markIn(time)} title={t("player.markIn")}>
           <Kbd>I</Kbd>

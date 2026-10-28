@@ -5,11 +5,13 @@ import { useTranslation } from "react-i18next";
 import { initApp, useApp } from "./editor/app";
 import { closeMedia, forgetRecent, loadRecents, openMedia, useRecents } from "./editor/session";
 import { useEditor } from "./editor/store";
+import { Badge } from "./ui/Brand";
 import { Button, Kbd } from "./ui/common";
 import { Player, Transport } from "./ui/Player";
 import { ShortcutBar, useShortcuts } from "./ui/shortcuts";
 import { CutList, ExportPanel, TrackMixer } from "./ui/Sidebar";
 import { Timeline } from "./ui/Timeline";
+import { CloseIcon } from "./ui/icons";
 
 const VIDEO_EXTENSIONS = ["mp4", "mkv", "mov", "webm", "avi", "flv", "ts", "m4v"];
 
@@ -67,8 +69,8 @@ export default function App() {
         </div>
       )}
       {dragging && ffmpeg && (
-        <div className="pointer-events-none fixed inset-0 z-30 flex items-center justify-center bg-indigo-600/20 backdrop-blur-[1px]">
-          <div className="rounded-xl border-2 border-dashed border-indigo-400 bg-neutral-900/80 px-8 py-6 text-lg font-medium text-white">{t("app.dropHere")}</div>
+        <div className="pointer-events-none fixed inset-0 z-30 flex items-center justify-center bg-brand-500/20 backdrop-blur-[1px]">
+          <div className="rounded-xl border-2 border-dashed border-brand-400 bg-neutral-900/80 px-8 py-6 text-lg font-medium text-white">{t("app.dropHere")}</div>
         </div>
       )}
     </div>
@@ -99,6 +101,7 @@ function Welcome({ onOpen, onOpenPath }: { onOpen: () => void; onOpenPath: (p: s
   return (
     <Centered>
       <div className="w-full max-w-lg">
+        <Badge className="mb-6 h-20" />
         <h1 className="text-2xl font-semibold">{t("welcome.title")}</h1>
         <p className="mt-1 text-neutral-600 dark:text-neutral-300">{t("welcome.subtitle")}</p>
         <div className="mt-5 flex items-center gap-3">
@@ -117,7 +120,7 @@ function Welcome({ onOpen, onOpenPath }: { onOpen: () => void; onOpenPath: (p: s
                 <span className="block truncate text-xs text-neutral-500">{p}</span>
               </button>
               <button type="button" className="px-3 text-neutral-400 opacity-0 hover:text-neutral-700 group-hover:opacity-100 dark:hover:text-neutral-200" title={t("welcome.forget")} onClick={() => void forgetRecent(p)}>
-                ✕
+                <CloseIcon />
               </button>
             </li>
           ))}
@@ -134,7 +137,7 @@ function Editor({ onOpen }: { onOpen: () => void }) {
   return (
     <>
       <header className="flex items-center gap-3 border-b border-neutral-200 px-3 py-1.5 dark:border-neutral-800">
-        <span className="font-semibold">clip-snip</span>
+        <Badge className="h-7 shrink-0" />
         <span className="min-w-0 truncate text-sm" title={media.path}>{name}</span>
         <span className="shrink-0 text-xs text-neutral-500">
           {media.width}×{media.height} · {Math.round(media.fps * 100) / 100} fps · {media.videoCodec.toUpperCase()}

@@ -4,6 +4,7 @@ import { envelopeColumns, formatTimecode, mixEnvelope, normalizeCut, type Cut } 
 import { playback } from "../editor/playback";
 import { editor, useEditor } from "../editor/store";
 import { IconButton } from "./common";
+import { MinusIcon, PlusIcon } from "./icons";
 
 const RULER_H = 20;
 const TRACK_H = 72;
@@ -195,11 +196,11 @@ export function Timeline() {
       <div className="flex items-center gap-1 px-3 pt-1 text-xs text-neutral-500">
         <span>{t("timeline.hint")}</span>
         <div className="ml-auto flex items-center">
-          <IconButton label={t("timeline.zoomOut")} onClick={() => zoomAround(0.67)}>−</IconButton>
+          <IconButton label={t("timeline.zoomOut")} onClick={() => zoomAround(0.67)}><MinusIcon /></IconButton>
           <button type="button" className="rounded px-1.5 py-0.5 hover:bg-neutral-200 dark:hover:bg-neutral-800" onClick={() => editor.setZoom(0)}>
             {t("timeline.fit")}
           </button>
-          <IconButton label={t("timeline.zoomIn")} onClick={() => zoomAround(1.5)}>+</IconButton>
+          <IconButton label={t("timeline.zoomIn")} onClick={() => zoomAround(1.5)}><PlusIcon /></IconButton>
         </div>
       </div>
       <div
@@ -236,7 +237,7 @@ export function Timeline() {
               key={c.id}
               data-cut={c.id}
               className={`absolute cursor-grab rounded-sm border-2 active:cursor-grabbing ${
-                c.id === selectedId ? "border-amber-400 bg-amber-400/25" : "border-indigo-400/80 bg-indigo-400/15 hover:bg-indigo-400/25"
+                c.id === selectedId ? "border-brand-400 bg-brand-400/30" : "border-brand2-400/80 bg-brand2-400/15 hover:bg-brand2-400/25"
               }`}
               style={{ left: c.startSec * pps, width: Math.max(2, (c.endSec - c.startSec) * pps), top: RULER_H + 2, height: TRACK_H - 4 }}
             >
@@ -250,19 +251,19 @@ export function Timeline() {
 
           {draft && (
             <div
-              className="pointer-events-none absolute rounded-sm border-2 border-dashed border-amber-400 bg-amber-400/15"
+              className="pointer-events-none absolute rounded-sm border-2 border-dashed border-brand-400 bg-brand-400/15"
               style={{ left: Math.min(draft.a, draft.b) * pps, width: Math.abs(draft.b - draft.a) * pps, top: RULER_H + 2, height: TRACK_H - 4 }}
             />
           )}
 
           {showPending && pending && (
             <div
-              className="pointer-events-none absolute rounded-sm border-2 border-dashed border-emerald-500 bg-emerald-500/10"
+              className="pointer-events-none absolute rounded-sm border-2 border-dashed border-brand2-400 bg-brand2-400/10"
               style={{ left: pending.startSec * pps, width: (pending.endSec - pending.startSec) * pps, top: RULER_H + 2, height: TRACK_H - 4 }}
             />
           )}
-          {markIn !== null && <div className="pointer-events-none absolute w-0.5 bg-emerald-500" style={{ left: markIn * pps, top: RULER_H, height: TRACK_H }} />}
-          {markOut !== null && <div className="pointer-events-none absolute w-0.5 bg-rose-500" style={{ left: markOut * pps, top: RULER_H, height: TRACK_H }} />}
+          {markIn !== null && <div className="pointer-events-none absolute w-0.5 bg-brand-400" style={{ left: markIn * pps, top: RULER_H, height: TRACK_H }} />}
+          {markOut !== null && <div className="pointer-events-none absolute w-0.5 bg-brand2-400" style={{ left: markOut * pps, top: RULER_H, height: TRACK_H }} />}
 
           <div className="pointer-events-none absolute top-0 w-px bg-red-500" style={{ left: time * pps, height: RULER_H + TRACK_H }}>
             <div className="absolute -left-1.5 top-0 h-0 w-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-red-500" />

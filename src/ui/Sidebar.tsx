@@ -6,6 +6,7 @@ import { cancelJob, clearFinished, enqueueExport, useExports, type ExportJob } f
 import { playback } from "../editor/playback";
 import { editor, useEditor } from "../editor/store";
 import { Button, formatDuration, IconButton, Kbd, ProgressBar, TimeInput } from "./common";
+import { CloseIcon, DownIcon, ToEndIcon, ToStartIcon, UpIcon } from "./icons";
 
 function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -36,7 +37,7 @@ export function TrackMixer() {
                 checked={m.enabled}
                 title={t("editor.trackToggle")}
                 onChange={(e) => editor.setTrack(tr.index, { enabled: e.target.checked })}
-                className="h-4 w-4 accent-indigo-600"
+                className="h-4 w-4"
               />
               <span className="w-24 truncate text-sm" title={tr.title ?? undefined}>
                 {tr.title ?? t("editor.track", { n: tr.index + 1 })}
@@ -85,7 +86,7 @@ export function CutList() {
               playback.seek(c.startSec);
             }}
             className={`rounded-md border px-2 py-1.5 ${
-              c.id === selectedId ? "border-amber-400 bg-amber-50 dark:bg-amber-400/10" : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700"
+              c.id === selectedId ? "border-brand-400 bg-brand-50 dark:bg-brand-400/10" : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700"
             }`}
           >
             <div className="flex items-center gap-1">
@@ -95,18 +96,18 @@ export function CutList() {
                 placeholder={t("editor.cutName")}
                 onChange={(e) => editor.updateCut(c.id, { name: e.target.value })}
                 onClick={(e) => e.stopPropagation()}
-                className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-sm hover:border-neutral-300 focus:border-indigo-500 focus:outline-none dark:hover:border-neutral-600"
+                className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-sm hover:border-neutral-300 focus:border-brand-500 focus:outline-none dark:hover:border-neutral-600"
               />
-              <IconButton label={t("editor.moveUp")} disabled={i === 0} onClick={(e) => { e.stopPropagation(); editor.moveCut(c.id, -1); }}>↑</IconButton>
-              <IconButton label={t("editor.moveDown")} disabled={i === cuts.length - 1} onClick={(e) => { e.stopPropagation(); editor.moveCut(c.id, 1); }}>↓</IconButton>
-              <IconButton label={`${t("editor.remove")} (Delete)`} onClick={(e) => { e.stopPropagation(); editor.removeCut(c.id); }}>✕</IconButton>
+              <IconButton label={t("editor.moveUp")} disabled={i === 0} onClick={(e) => { e.stopPropagation(); editor.moveCut(c.id, -1); }}><UpIcon /></IconButton>
+              <IconButton label={t("editor.moveDown")} disabled={i === cuts.length - 1} onClick={(e) => { e.stopPropagation(); editor.moveCut(c.id, 1); }}><DownIcon /></IconButton>
+              <IconButton label={`${t("editor.remove")} (Delete)`} onClick={(e) => { e.stopPropagation(); editor.removeCut(c.id); }}><CloseIcon /></IconButton>
             </div>
             <div className="mt-0.5 flex items-center gap-0.5 pl-5 text-xs text-neutral-500" onClick={(e) => e.stopPropagation()}>
-              <IconButton label={t("editor.setStartHere")} className="!h-5 !w-5 text-xs" onClick={() => editor.setCutEdge(c.id, "start", useEditor.getState().time)}>⇤</IconButton>
+              <IconButton label={t("editor.setStartHere")} className="!h-5 !w-5 text-xs" onClick={() => editor.setCutEdge(c.id, "start", useEditor.getState().time)}><ToStartIcon /></IconButton>
               <TimeInput label={t("editor.start")} value={c.startSec} onCommit={(s) => editor.setCutEdge(c.id, "start", s)} />
               <span>–</span>
               <TimeInput label={t("editor.end")} value={c.endSec} onCommit={(s) => editor.setCutEdge(c.id, "end", s)} />
-              <IconButton label={t("editor.setEndHere")} className="!h-5 !w-5 text-xs" onClick={() => editor.setCutEdge(c.id, "end", useEditor.getState().time)}>⇥</IconButton>
+              <IconButton label={t("editor.setEndHere")} className="!h-5 !w-5 text-xs" onClick={() => editor.setCutEdge(c.id, "end", useEditor.getState().time)}><ToEndIcon /></IconButton>
               <span className="ml-auto tabular-nums">{formatDuration(c.endSec - c.startSec)}</span>
             </div>
           </li>
@@ -163,7 +164,7 @@ export function ExportPanel() {
 
       {preset.sizeLimitBytes === null && preset.codec !== "copy" && (
         <label className="mb-2 flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={keepSeparate} onChange={(e) => editor.setKeepSeparateTracks(e.target.checked)} className="h-4 w-4 accent-indigo-600" />
+          <input type="checkbox" checked={keepSeparate} onChange={(e) => editor.setKeepSeparateTracks(e.target.checked)} className="h-4 w-4" />
           {t("export.keepTracks")}
         </label>
       )}
@@ -215,15 +216,15 @@ function JobRow({ job }: { job: ExportJob }) {
       <div className="flex items-center gap-1">
         <span className="min-w-0 flex-1 truncate font-medium" title={job.label}>{job.label}</span>
         {(job.status === "queued" || job.status === "running") && (
-          <IconButton label={t("export.cancel")} className="!h-5 !w-5" onClick={() => void cancelJob(job.id)}>✕</IconButton>
+          <IconButton label={t("export.cancel")} className="!h-5 !w-5" onClick={() => void cancelJob(job.id)}><CloseIcon /></IconButton>
         )}
       </div>
       {job.status === "running" && <div className="my-1"><ProgressBar value={job.progress} /></div>}
       <div className="flex items-center gap-2 text-neutral-500">
-        <span className={job.status === "failed" ? "text-red-600" : job.status === "done" ? "text-emerald-600" : ""}>{status}</span>
+        <span className={job.status === "failed" ? "text-red-600" : job.status === "done" ? "text-brand-600 dark:text-brand-400" : ""}>{status}</span>
         {job.result && job.result.attempts > 1 && <span>· {t("export.attempts", { n: job.result.attempts - 1 })}</span>}
         {job.result && (
-          <button type="button" className="ml-auto text-indigo-600 hover:underline dark:text-indigo-400" onClick={() => void revealItemInDir(job.result!.outPath)}>
+          <button type="button" className="ml-auto text-brand2-600 hover:underline dark:text-brand2-400" onClick={() => void revealItemInDir(job.result!.outPath)}>
             {t("export.showInFolder")}
           </button>
         )}

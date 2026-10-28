@@ -6,13 +6,17 @@ Scope: [spec.md](spec.md).
 
 - [x] Core engine: presets, size budget, resolution ladder, encoder choice, FFmpeg commands, overshoot retry
 - [x] Unit tests + integration tests against real FFmpeg
-- [ ] Rust backend: FFmpeg detection/download (SHA-256), process runner with progress and cancel, encoder probe
-- [ ] Media probe (ffprobe → `MediaInfo`), per-track audio extraction for preview
-- [ ] UI: player, live multi-track mixer, timeline with waveform, cut list, keyboard shortcuts with hints
-- [ ] Export queue, presets, settings, auto-save per video
-- [ ] Copy exported file to clipboard (Windows / macOS / Linux) + "Show in folder"
-- [ ] i18n (en, pt-BR) and system theme
-- [ ] Preview proxy (H.264 540p) when the WebView cannot decode the source
+- [x] Rust backend: FFmpeg detection (system `PATH`), process runner with progress and cancel, encoder probe
+- [ ] FFmpeg download on first run (pinned version, SHA-256)
+- [x] Media probe (ffprobe → `MediaInfo`), per-track audio extraction for preview
+- [x] UI: player, live multi-track mixer, timeline with waveform, cut list, keyboard shortcuts with hints
+- [x] Export queue, presets, auto-save per video, recent files, drag and drop
+- [ ] Settings screen (export folder, encoder, language)
+- [x] "Show in folder" after export
+- [ ] Copy exported file to clipboard (Windows / macOS / Linux)
+- [x] i18n (en, pt-BR) and system theme
+- [x] Preview proxy (H.264 540p) when the WebView cannot decode the source
+- [x] Logo, app icon and palette
 - [ ] Update check against GitHub Releases
 - [ ] CI: tests on push, installers for the 3 OSes on tags
 

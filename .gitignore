@@ -31,3 +31,6 @@ src-tauri/gen
 *.mbtree
 ffmpeg2pass-*.log
 coverage
+
+# Logo drafts and generator (final assets live in assets/brand)
+logo candidates/

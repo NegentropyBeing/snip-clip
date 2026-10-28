@@ -88,3 +88,26 @@ export function formatDuration(sec: number): string {
   const s = Math.round(sec % 60);
   return `${m} min ${s} s`;
 }
+
+/** Settings row: label on the left, control and hint on the right. */
+export function Row({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[10rem_1fr] items-start gap-3 py-2.5">
+      <div className="pt-1.5 text-sm font-medium">{label}</div>
+      <div className="min-w-0">
+        {children}
+        {hint && <p className="mt-1 text-xs text-neutral-500">{hint}</p>}
+      </div>
+    </div>
+  );
+}
+
+export const selectClass = "rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100";
+
+export function Select<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value as T)} className={selectClass}>
+      {options.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+    </select>
+  );
+}

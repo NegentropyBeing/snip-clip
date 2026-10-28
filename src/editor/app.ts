@@ -23,6 +23,8 @@ export interface Settings {
   checkUpdates: boolean;
   /** Timeline waveform: the current mix, or one lane per audio track. */
   waveform: "mix" | "tracks";
+  /** snip-clip turned on OBS's WebSocket server, so removing the replay profile turns it off (FR-39). */
+  obsWebsocketOwned: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -34,6 +36,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   checkUpdates: true,
   waveform: "mix",
+  obsWebsocketOwned: false,
 };
 
 export interface UpdateNotice {
@@ -81,6 +84,7 @@ export function parseSettings(raw: unknown): Settings {
     theme: pick(r.theme, ["system", "light", "dark"] as const, d.theme),
     checkUpdates: typeof r.checkUpdates === "boolean" ? r.checkUpdates : d.checkUpdates,
     waveform: pick(r.waveform, ["mix", "tracks"] as const, d.waveform),
+    obsWebsocketOwned: typeof r.obsWebsocketOwned === "boolean" ? r.obsWebsocketOwned : d.obsWebsocketOwned,
   };
 }
 

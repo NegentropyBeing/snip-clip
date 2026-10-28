@@ -37,9 +37,9 @@ Scope: [spec.md §16](spec.md#16-v02--gravação-perfil-de-replay), [ADR 0001](d
 
 - [x] Core: replay profile generation in TypeScript (OBS `basic.ini`, encoder settings, scene collection) with tests, reading back an installed profile
 - [x] Backend: find OBS (Windows; Linux native or Flatpak), tell if it is running, read and write its files, backups, Linux audio plugin check
-- [ ] Settings split into General and Recording tabs
-- [ ] Recording tab: status, install / reconfigure (basic + Advanced), remove, open OBS now, start at login (off by default)
-- [ ] Missing OBS and missing Linux audio plugin: install instructions, nothing downloaded
+- [x] Settings split into General and Recording tabs
+- [x] Recording tab: status, install / reconfigure (basic + Advanced), remove, open OBS now, start at login (off by default)
+- [x] Missing OBS and missing Linux audio plugin: install instructions, nothing downloaded
 - [ ] Save-replay hotkey: OBS on Windows and X11, GNOME custom shortcut on Wayland, instructions elsewhere
 - [ ] `snip-clip --save-replay` through OBS's WebSocket server, without opening the window
 - [ ] Open folder setting (follows the replays folder by default)

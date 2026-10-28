@@ -149,7 +149,7 @@ const LINUX_APPS: Record<Browser | "discord", string[]> = {
   firefox: ["firefox", "firefox-bin", "Firefox"],
   zen: ["zen", "zen-bin", "Zen"],
 };
-const BROWSERS = Object.keys(LINUX_APPS).filter((k) => k !== "discord") as Browser[];
+export const BROWSERS = Object.keys(LINUX_APPS).filter((k) => k !== "discord") as Browser[];
 
 /** Audio tracks (1-6) -> OBS mixer bitmask. */
 function tracks(...numbers: number[]): number {

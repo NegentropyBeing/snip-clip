@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode follows the `dark` class on <html> (set from the theme setting, src/editor/app.ts). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Brand palette. Utilities (bg-brand-500, text-brand2-400, neutrals…) read the --p-* values
    below; brand -> brand2 is the logo gradient. */
 @theme {
@@ -79,10 +82,13 @@
   --waveform: var(--color-brand-500);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --waveform: var(--color-brand-400);
-  }
+:root.dark {
+  color-scheme: dark;
+  --waveform: var(--color-brand-400);
+}
+
+:root:not(.dark) {
+  color-scheme: light;
 }
 
 html,

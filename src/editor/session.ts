@@ -2,12 +2,13 @@
 import { appCacheDir, appDataDir, join } from "@tauri-apps/api/path";
 import { create } from "zustand";
 import {
-  decodeEnvelope, DEFAULT_PRESET, mediaKey, parseProject, previewAudioArgs, previewFiles, proxyArgs,
+  decodeEnvelope, mediaKey, parseProject, previewAudioArgs, previewFiles, proxyArgs,
   type MediaInfo, type ProjectFile,
 } from "../core";
 import {
   allowAsset, assetUrl, createRunner, ensureDir, fileStat, pathExists, probeMedia, pruneDirs, readBytes, readText, writeText,
 } from "../platform/tauri";
+import { useApp } from "./app";
 import { playback } from "./playback";
 import { editor, useEditor } from "./store";
 
@@ -69,7 +70,7 @@ export async function openMedia(path: string): Promise<void> {
     cuts: saved?.cuts ?? [],
     selectedId: saved?.cuts[0]?.id ?? null,
     mix: saved?.mix ?? media.audioTracks.map(() => ({ enabled: true, volume: 1 })),
-    presetId: saved?.presetId ?? DEFAULT_PRESET,
+    presetId: saved?.presetId ?? useApp.getState().settings.defaultPreset,
     mode: saved?.mode ?? "separate",
     keepSeparateTracks: saved?.keepSeparateTracks ?? false,
     video: { source: "original", src: assetUrl(path), progress: 0 },

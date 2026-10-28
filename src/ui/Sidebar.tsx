@@ -1,8 +1,8 @@
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
-import { planOutput, PRESETS, totalDuration, type PresetId } from "../core";
-import { cancelJob, clearFinished, enqueueExport, useExports, type ExportJob } from "../editor/exportQueue";
+import { planOutput, PRESET_ORDER, PRESETS, totalDuration, type PresetId } from "../core";
+import { cancelJob, clearFinished, copyToClipboard, enqueueExport, useExports, type ExportJob } from "../editor/exportQueue";
 import { playback } from "../editor/playback";
 import { editor, useEditor } from "../editor/store";
 import { Button, formatDuration, IconButton, Kbd, ProgressBar, TimeInput } from "./common";
@@ -117,8 +117,6 @@ export function CutList() {
   );
 }
 
-const PRESET_ORDER: PresetId[] = ["discord-20", "discord-20-av1", "nitro-basic-50", "nitro-500", "unlimited", "original"];
-
 export function ExportPanel() {
   const { t } = useTranslation();
   const media = useEditor((s) => s.media);
@@ -224,9 +222,14 @@ function JobRow({ job }: { job: ExportJob }) {
         <span className={job.status === "failed" ? "text-red-600" : job.status === "done" ? "text-brand-600 dark:text-brand-400" : ""}>{status}</span>
         {job.result && job.result.attempts > 1 && <span>· {t("export.attempts", { n: job.result.attempts - 1 })}</span>}
         {job.result && (
-          <button type="button" className="ml-auto text-brand2-600 hover:underline dark:text-brand2-400" onClick={() => void revealItemInDir(job.result!.outPath)}>
-            {t("export.showInFolder")}
-          </button>
+          <span className="ml-auto flex gap-2">
+            <button type="button" className="text-brand2-600 hover:underline dark:text-brand2-400" onClick={() => void copyToClipboard([job.result!.outPath])}>
+              {t("export.copy")}
+            </button>
+            <button type="button" className="text-brand2-600 hover:underline dark:text-brand2-400" onClick={() => void revealItemInDir(job.result!.outPath)}>
+              {t("export.showInFolder")}
+            </button>
+          </span>
         )}
       </div>
       {job.error && <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap text-[10px] text-red-600">{job.error}</pre>}

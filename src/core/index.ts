@@ -11,3 +11,4 @@ export * from "./cuts";
 export * from "./preview";
 export * from "./project";
 export * from "./timecode";
+export * from "./version";

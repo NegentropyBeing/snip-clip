@@ -22,7 +22,7 @@ pub enum Tool {
 }
 
 impl Tool {
-    fn file_name(self) -> &'static str {
+    pub fn file_name(self) -> &'static str {
         match (self, cfg!(windows)) {
             (Tool::Ffmpeg, true) => "ffmpeg.exe",
             (Tool::Ffmpeg, false) => "ffmpeg",
@@ -63,6 +63,12 @@ struct ProgressEvent<'a> {
 pub struct FfmpegState {
     info: Mutex<Option<FfmpegInfo>>,
     jobs: Mutex<HashMap<String, oneshot::Sender<()>>>,
+}
+
+impl FfmpegState {
+    pub fn set(&self, info: Option<FfmpegInfo>) {
+        *self.info.lock().unwrap() = info;
+    }
 }
 
 /// Directory where a downloaded FFmpeg lives (see FR-31).
@@ -159,7 +165,7 @@ fn tail(text: &str, max: usize) -> String {
 #[tauri::command]
 pub async fn ffmpeg_locate(app: AppHandle, state: State<'_, FfmpegState>) -> Result<Option<FfmpegInfo>, String> {
     let info = locate(&app).await;
-    *state.info.lock().unwrap() = info.clone();
+    state.set(info.clone());
     Ok(info)
 }
 

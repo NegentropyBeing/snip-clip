@@ -11,9 +11,9 @@
 
 Cut one or many micro-clips from game recordings (OBS replays, NVIDIA app, anything FFmpeg reads) and export them ready to share — by default as **Discord-size files (≤ 20 MB)**.
 
-> **Status:** early preview (**v0.1.0-beta.2**, Windows). It needs **FFmpeg on your `PATH`** for now — the in-app download, clipboard copy and settings screen are still to come. See [ROADMAP.md](ROADMAP.md) and [spec.md](spec.md) (Portuguese).
+> **Status:** early preview (**v0.1 beta**). See [ROADMAP.md](ROADMAP.md) and [spec.md](spec.md) (Portuguese).
 
-## What it will do (v0.1)
+## What it does (v0.1)
 
 - Open a recording and see its audio tracks by name (OBS: *Game, Discord, Browser, Mic…*).
 - Toggle tracks and change their volume while listening to the live mix.
@@ -22,13 +22,24 @@ Cut one or many micro-clips from game recordings (OBS replays, NVIDIA app, anyth
 - Copy the exported file to the clipboard, ready to paste into Discord.
 - Windows, Linux and macOS · English and Portuguese.
 
-## Install (Windows beta)
+## Install
 
-1. Install FFmpeg and make sure it is on your `PATH`, for example with `winget install Gyan.FFmpeg`. Open a new terminal and check with `ffmpeg -version`.
-2. Download `snip-clip_<version>_x64-setup.exe` from [Releases](https://github.com/NegentropyBeing/snip-clip/releases) and run it.
-3. The installer is not code-signed yet, so Windows SmartScreen may warn. Choose *More info → Run anyway*.
+Download the installer for your system from [Releases](https://github.com/NegentropyBeing/snip-clip/releases):
 
-Exported clips go to `Videos\Clips`.
+| System | File |
+|---|---|
+| Windows | `snip-clip_<version>_x64-setup.exe` |
+| macOS (Intel and Apple Silicon) | `snip-clip_<version>_universal.dmg` |
+| Linux | `snip-clip_<version>_amd64.AppImage` or `.deb` |
+
+The installers are not code-signed yet:
+
+- **Windows:** SmartScreen may warn. Choose *More info → Run anyway*.
+- **macOS:** the first time, right-click the app in *Applications* and choose *Open*, or allow it in *System Settings → Privacy & Security*.
+
+On first launch snip-clip looks for FFmpeg on your computer. If there is none, it offers to download a fixed, checksum-verified FFmpeg build into its own folder (about 30–200 MB depending on the system). You can also install FFmpeg yourself (`winget install Gyan.FFmpeg`, `brew install ffmpeg`, `sudo apt install ffmpeg`).
+
+Exported clips go to `Videos/Clips` (macOS: `Movies/Clips`) and are copied to the clipboard, ready to paste into Discord. Both can be changed in *Settings* (`Ctrl+,`).
 
 ## Recording with OBS (Windows)
 

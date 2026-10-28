@@ -1,7 +1,7 @@
 // Bridges the platform-independent core to the Rust backend (src-tauri/src).
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { parseProbe, PROBE_ARGS, type Exec, type ExecResult, type FfmpegRunner, type MediaInfo } from "../core";
+import { parseProbe, PROBE_ARGS, type Exec, type ExecResult, type FfmpegRunner, type MediaInfo, type ReleaseInfo } from "../core";
 
 export interface FfmpegInfo {
   ffmpeg: string;
@@ -17,6 +17,32 @@ interface ProgressEvent {
 }
 
 export const locateFfmpeg = () => invoke<FfmpegInfo | null>("ffmpeg_locate");
+
+/** The pinned FFmpeg build for this platform (FR-31); null when there is none. */
+export interface FfmpegDownloadInfo {
+  version: string;
+  origin: string;
+  bytes: number;
+}
+
+export interface DownloadProgress {
+  stage: "download" | "extract";
+  received: number;
+  total: number;
+}
+
+export const ffmpegDownloadInfo = () => invoke<FfmpegDownloadInfo | null>("ffmpeg_download_info");
+export const cancelFfmpegDownload = () => invoke<void>("ffmpeg_download_cancel");
+
+/** Downloads, verifies and activates the pinned FFmpeg. Rejects with "cancelled" when cancelled. */
+export async function downloadFfmpeg(onProgress: (p: DownloadProgress) => void): Promise<FfmpegInfo> {
+  const unlisten = await listen<DownloadProgress>("ffmpeg-download", (e) => onProgress(e.payload));
+  try {
+    return await invoke<FfmpegInfo>("ffmpeg_download");
+  } finally {
+    unlisten();
+  }
+}
 
 const execTool = (tool: "ffmpeg" | "ffprobe", args: string[]) => invoke<ExecResult>("exec_tool", { tool, args });
 
@@ -56,6 +82,12 @@ export const readText = (path: string) => invoke<string | null>("read_text", { p
 export const writeText = (path: string, contents: string) => invoke<void>("write_text", { path, contents });
 export const removeFile = (path: string) => invoke<void>("remove_file", { path });
 export const pruneDirs = (dir: string, keep: number, except?: string) => invoke<number>("prune_dirs", { dir, keep, except });
+
+/** Puts the files themselves (not their paths) on the clipboard (FR-21). */
+export const copyFiles = (paths: string[]) => invoke<void>("copy_files", { paths });
+
+/** Published (non-draft) releases of the app on GitHub, newest first. */
+export const listReleases = () => invoke<ReleaseInfo[]>("list_releases");
 
 /** URL the WebView can stream. Files outside the app cache must be allowed first (`allowAsset`). */
 export const assetUrl = (path: string) => convertFileSrc(path);

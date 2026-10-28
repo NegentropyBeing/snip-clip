@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { openSettings, useApp } from "../editor/app";
 import { enqueueExport } from "../editor/exportQueue";
 import { playback } from "../editor/playback";
 import { editor, useEditor } from "../editor/store";
@@ -9,11 +10,16 @@ const isTyping = (el: EventTarget | null) =>
   el instanceof HTMLElement && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)
     && !(el instanceof HTMLInputElement && ["checkbox", "range", "radio"].includes(el.type)));
 
-/** Editor keyboard shortcuts (spec 5.4). `onOpen` handles Ctrl/Cmd+O. */
+/** Editor keyboard shortcuts (spec 5.4). `onOpen` handles Ctrl/Cmd+O; Ctrl/Cmd+, opens the settings. */
 export function useShortcuts(onOpen: () => void) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key === ",") {
+        e.preventDefault();
+        return openSettings();
+      }
+      if (useApp.getState().settingsOpen) return;
       if (mod && e.key.toLowerCase() === "o") {
         e.preventDefault();
         return onOpen();

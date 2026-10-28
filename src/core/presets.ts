@@ -14,3 +14,6 @@ export const PRESETS: Record<PresetId, Preset> = {
 };
 
 export const DEFAULT_PRESET: PresetId = "discord-20";
+
+/** Order in menus. */
+export const PRESET_ORDER: PresetId[] = ["discord-20", "discord-20-av1", "nitro-basic-50", "nitro-500", "unlimited", "original"];

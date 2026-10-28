@@ -5,14 +5,17 @@ import {
   clipFileName, montageFileName, pickBackend, planOutput, PRESETS, runExport, totalDuration, uniqueNameAsync,
   type Cut, type ExportResult, type MediaInfo, type PresetId, type TrackMix,
 } from "../core";
-import { createRunner, ensureDir, pathExists, removeFile } from "../platform/tauri";
-import { exportDir, useApp } from "./app";
+import i18n from "../i18n";
+import { copyFiles, createRunner, ensureDir, pathExists, removeFile } from "../platform/tauri";
+import { exportDir, notify, useApp } from "./app";
 import { useEditor } from "./store";
 
 export type JobStatus = "queued" | "running" | "done" | "failed" | "cancelled";
 
 export interface ExportJob {
   id: string;
+  /** Jobs queued by the same Export click; their files go to the clipboard together. */
+  batch: string;
   /** File name once known; until then the cut label. */
   label: string;
   status: JobStatus;
@@ -52,8 +55,10 @@ export function enqueueExport(): number {
   const preset = PRESETS[s.presetId];
   const groups = s.mode === "montage" && preset.allowsMontage && s.cuts.length > 1 ? [s.cuts] : s.cuts.map((c) => [c]);
   const baseName = baseNameOf(s.media.path);
+  const batch = crypto.randomUUID();
   const jobs: ExportJob[] = groups.map((cuts) => ({
     id: crypto.randomUUID(),
+    batch,
     label: cuts.length > 1 ? montageFileName(baseName) : clipFileName(baseName, cuts[0]),
     status: "queued",
     progress: 0,
@@ -84,9 +89,29 @@ async function work() {
       const job = useExports.getState().jobs.find((j) => j.status === "queued");
       if (!job) break;
       await runJob(job);
+      await batchFinished(job.batch);
     }
   } finally {
     working = false;
+  }
+}
+
+/** Once every job of a batch has ended, copies its exported files to the clipboard (FR-21). */
+async function batchFinished(batch: string) {
+  const jobs = useExports.getState().jobs.filter((j) => j.batch === batch);
+  if (jobs.some((j) => j.status === "queued" || j.status === "running")) return;
+  const paths = jobs.flatMap((j) => (j.status === "done" && j.result ? [j.result.outPath] : []));
+  if (paths.length > 0 && useApp.getState().settings.copyAfterExport) await copyToClipboard(paths);
+}
+
+/** Copies exported files and says so; on failure points to "Show in folder". */
+export async function copyToClipboard(paths: string[]) {
+  try {
+    await copyFiles(paths);
+    const paste = navigator.platform.toLowerCase().includes("mac") ? "⌘V" : "Ctrl+V";
+    notify(i18n.t("export.copied", { count: paths.length, paste }));
+  } catch (e) {
+    notify(`${i18n.t("export.copyFailed")} ${String(e)}`, true);
   }
 }
 

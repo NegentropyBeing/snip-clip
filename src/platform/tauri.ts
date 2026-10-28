@@ -99,6 +99,10 @@ export interface ObsStatus {
   wayland: boolean;
   appAudioPlugin: boolean;
   vaapiDevice: string | null;
+  /** Linux: XDG_CURRENT_DESKTOP, e.g. "GNOME" or "ubuntu:GNOME". */
+  desktop: string | null;
+  /** What a desktop shortcut runs to save the replay: `snip-clip --save-replay`. */
+  saveReplayCommand: string;
 }
 
 export const obsStatus = () => invoke<ObsStatus>("obs_status");
@@ -114,6 +118,9 @@ export const obsWriteWebsocket = (contents: string) => invoke<void>("obs_write_w
 export const obsSetAutostart = (enabled: boolean) => invoke<void>("obs_set_autostart", { enabled });
 /** Starts OBS in the replay profile with the replay buffer running; does nothing if OBS already runs. */
 export const obsLaunch = () => invoke<void>("obs_launch");
+/** Linux: a GNOME custom shortcut running `snip-clip --save-replay`. Returns GNOME's shortcuts on the same keys. */
+export const obsRegisterGnomeShortcut = (accel: string, name: string) => invoke<string[]>("obs_register_gnome_shortcut", { accel, name });
+export const obsUnregisterGnomeShortcut = () => invoke<void>("obs_unregister_gnome_shortcut");
 
 /** URL the WebView can stream. Files outside the app cache must be allowed first (`allowAsset`). */
 export const assetUrl = (path: string) => convertFileSrc(path);

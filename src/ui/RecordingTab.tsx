@@ -4,13 +4,13 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  BROWSERS, defaultMemoryMb, pickRecordingEncoder, RECORDING_ENCODERS, recordingEncoders, type Browser, type RecordingEncoder,
-  type ReplayProfileOptions,
+  BROWSERS, defaultMemoryMb, formatHotkey, hotkeyFromKeyPress, pickRecordingEncoder, RECORDING_ENCODERS, recordingEncoders,
+  type Browser, type ObsHotkey, type RecordingEncoder, type ReplayProfileOptions,
 } from "../core";
 import { notify, useApp } from "../editor/app";
 import {
-  installReplayProfile, loadReplayOptions, obsLaunch, obsSetAutostart, obsStatus, recordingEncodersUsable, recordingEnv,
-  removeReplayProfile, trackLang, type ObsStatus,
+  hotkeyMode, installReplayProfile, loadReplayOptions, obsLaunch, obsSetAutostart, obsStatus, recordingEncodersUsable,
+  recordingEnv, removeReplayProfile, trackLang, type ObsStatus,
 } from "../editor/recording";
 import { Button, Row, Select, selectClass } from "./common";
 
@@ -49,6 +49,43 @@ function NumberInput({ value, onChange, min, max, step = 1, placeholder }: {
   );
 }
 
+/** Click, then press the keys. Keeps the keys from Settings and the editor while listening. */
+function HotkeyInput({ value, onChange }: { value: ObsHotkey; onChange: (h: ObsHotkey) => void }) {
+  const { t } = useTranslation();
+  const [listening, setListening] = useState(false);
+  return (
+    <button
+      type="button" className={`${selectClass} min-w-36 text-left font-mono`} aria-live="polite"
+      onClick={() => setListening(true)}
+      onBlur={() => setListening(false)}
+      onKeyDown={(e) => {
+        if (!listening) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.key === "Escape") return setListening(false);
+        const hotkey = hotkeyFromKeyPress(e);
+        if (hotkey) {
+          onChange(hotkey);
+          setListening(false);
+        }
+      }}
+    >
+      {listening ? t("recording.pressKeys") : formatHotkey(value)}
+    </button>
+  );
+}
+
+function CopyCommand({ command }: { command: string }) {
+  const { t } = useTranslation();
+  const copy = () => navigator.clipboard.writeText(command).then(() => notify(t("recording.copied")), (e) => notify(String(e), true));
+  return (
+    <div className="mt-1 flex items-center gap-2">
+      <code className="min-w-0 flex-1 truncate rounded bg-neutral-200 px-1.5 py-1 font-mono text-xs dark:bg-neutral-800" title={command}>{command}</code>
+      <Button onClick={() => void copy()}>{t("recording.copy")}</Button>
+    </div>
+  );
+}
+
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 const even = (v: number) => Math.max(2, Math.round(v / 2) * 2);
 
@@ -62,6 +99,8 @@ export function RecordingTab() {
   /** undefined while testing; null without FFmpeg (every encoder is offered). */
   const [usable, setUsable] = useState<Set<string> | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
+  /** GNOME shortcuts already on the save-replay keys, found when installing. */
+  const [conflicts, setConflicts] = useState<string[]>([]);
 
   const refresh = useCallback(async () => {
     const s = await obsStatus();
@@ -127,6 +166,7 @@ export function RecordingTab() {
     return usable === null || name === null || usable?.has(name) || e === form.encoder;
   });
   const showBrowsers = platform === "windows" || status.appAudioPlugin;
+  const hotkeys = hotkeyMode(status);
 
   const pickFolder = async () => {
     const dir = await open({ directory: true, defaultPath: form.replaysFolder });
@@ -158,7 +198,7 @@ export function RecordingTab() {
       quality: clamp(Math.round(form.quality), 1, 51),
       lang: trackLang(),
     };
-    await installReplayProfile(options, s, autostart);
+    setConflicts((await installReplayProfile(options, s, autostart)).conflicts);
     notify(t(installed ? "recording.updated" : "recording.installed"));
     setInstalled(true);
   });
@@ -168,8 +208,9 @@ export function RecordingTab() {
       kind: "warning", okLabel: t("recording.remove"), cancelLabel: t("recording.cancel"),
     });
     if (!confirmed) return;
-    await removeReplayProfile();
+    await removeReplayProfile(status);
     setInstalled(false);
+    setConflicts([]);
     setAutostart(false);
     notify(t("recording.removed"));
   });
@@ -219,6 +260,17 @@ export function RecordingTab() {
             </code>
             <Button onClick={() => void pickFolder()}>{t("settings.change")}</Button>
           </div>
+        </Row>
+
+        <Row label={t("recording.hotkey")} hint={t(`recording.hotkeyHint.${hotkeys}`)}>
+          <HotkeyInput value={form.saveHotkey} onChange={(saveHotkey) => { set({ saveHotkey }); setConflicts([]); }} />
+          {hotkeys === "manual" && <CopyCommand command={status.saveReplayCommand} />}
+          {conflicts.length > 0 && (
+            <Notice tone="warn">
+              <p>{t("recording.hotkeyConflicts", { keys: formatHotkey(form.saveHotkey) })}</p>
+              <ul className="mt-1 list-disc pl-5 font-mono text-xs">{conflicts.map((c) => <li key={c}>{c}</li>)}</ul>
+            </Notice>
+          )}
         </Row>
 
         <Row label={t("recording.encoder")} hint={t("recording.encoderHint")}>

@@ -1,19 +1,31 @@
 // The Recording tab's work (spec §16): load the replay profile, install it, remove it.
 import { join, videoDir } from "@tauri-apps/api/path";
 import {
-  buildReplayProfile, defaultReplayOptions, detectEncoders, disableWebsocket, enableWebsocket, readReplayProfile,
-  recordingEncoderCandidates, type RecordingEnv, type RecordingPlatform, type ReplayProfileOptions, type TrackLang,
-  type WebsocketConfig,
+  buildReplayProfile, defaultReplayOptions, detectEncoders, disableWebsocket, enableWebsocket, gnomeAccelerator,
+  readReplayProfile, recordingEncoderCandidates, type RecordingEnv, type RecordingPlatform, type ReplayProfileOptions,
+  type TrackLang, type WebsocketConfig,
 } from "../core";
 import i18n from "../i18n";
 import {
-  execFfmpeg, obsInstallProfile, obsReadProfile, obsReadWebsocket, obsRemoveProfile, obsSetAutostart,
-  obsWriteWebsocket, type ObsStatus,
+  execFfmpeg, obsInstallProfile, obsReadProfile, obsReadWebsocket, obsRegisterGnomeShortcut, obsRemoveProfile,
+  obsSetAutostart, obsUnregisterGnomeShortcut, obsWriteWebsocket, type ObsStatus,
 } from "../platform/tauri";
 import { updateSettings, useApp } from "./app";
 
 export function recordingEnv(status: ObsStatus): RecordingEnv {
   return { platform: status.platform === "linux" ? "linux" : "windows", wayland: status.wayland, appAudio: status.appAudioPlugin };
+}
+
+/**
+ * Who listens for the save-replay hotkey (FR-44): OBS itself on Windows and X11; on Wayland OBS
+ * hears it only while focused, so a GNOME shortcut runs `snip-clip --save-replay`, and on other
+ * desktops the user sets that shortcut up.
+ */
+export type HotkeyMode = "obs" | "gnome" | "manual";
+
+export function hotkeyMode(status: ObsStatus): HotkeyMode {
+  if (status.platform !== "linux" || !status.wayland) return "obs";
+  return /gnome/i.test(status.desktop ?? "") ? "gnome" : "manual";
 }
 
 /** Track and source names follow the app's language. */
@@ -68,9 +80,12 @@ async function readWebsocket(): Promise<WebsocketConfig | null> {
 
 /**
  * Installs or reconfigures the replay profile. On Wayland also turns on OBS's WebSocket server
- * for `snip-clip --save-replay` (FR-45). Returns the backup folder of the previous version.
+ * for `snip-clip --save-replay` (FR-45) and, on GNOME, registers the hotkey with GNOME (FR-44).
+ * Returns the backup folder of the previous version and GNOME's shortcuts on the same keys.
  */
-export async function installReplayProfile(options: ReplayProfileOptions, status: ObsStatus, autostart: boolean): Promise<string | null> {
+export async function installReplayProfile(
+  options: ReplayProfileOptions, status: ObsStatus, autostart: boolean,
+): Promise<{ backup: string | null; conflicts: string[] }> {
   const env = recordingEnv(status);
   const backup = await obsInstallProfile(buildReplayProfile(options, env), stamp());
   if (env.wayland) {
@@ -78,14 +93,20 @@ export async function installReplayProfile(options: ReplayProfileOptions, status
     await obsWriteWebsocket(JSON.stringify(config, null, 4));
     if (turnedOn) await updateSettings({ obsWebsocketOwned: true });
   }
+  let conflicts: string[] = [];
+  const accel = gnomeAccelerator(options.saveHotkey);
+  if (hotkeyMode(status) === "gnome" && accel) {
+    conflicts = await obsRegisterGnomeShortcut(accel, i18n.t("recording.gnomeShortcutName"));
+  }
   if (autostart !== status.autostart) await obsSetAutostart(autostart);
-  return backup;
+  return { backup, conflicts };
 }
 
 /** Removes the replay profile, its start-at-login entry, and the WebSocket server if snip-clip turned it on (FR-39). */
-export async function removeReplayProfile(): Promise<void> {
+export async function removeReplayProfile(status: ObsStatus): Promise<void> {
   await obsRemoveProfile();
   await obsSetAutostart(false);
+  if (status.platform === "linux") await obsUnregisterGnomeShortcut().catch(() => {});
   if (useApp.getState().settings.obsWebsocketOwned) {
     const current = await readWebsocket();
     if (current) await obsWriteWebsocket(JSON.stringify(disableWebsocket(current), null, 4));

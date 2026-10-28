@@ -61,6 +61,10 @@ pub struct ObsStatus {
     app_audio_plugin: bool,
     /// Linux: the first render node, for testing VAAPI encoders.
     vaapi_device: Option<String>,
+    /// Linux: the desktop (XDG_CURRENT_DESKTOP), e.g. "GNOME" or "KDE".
+    desktop: Option<String>,
+    /// The command a desktop shortcut runs to save the replay (FR-45).
+    save_replay_command: String,
 }
 
 /// The replay profile's three files, as built by `buildReplayProfile`.
@@ -411,6 +415,144 @@ fn set_autostart(_: bool) -> Result<(), String> {
     Err("not available on macOS".into())
 }
 
+/// The installed snip-clip: an AppImage runs from a temporary mount, so use the image itself.
+fn self_exe() -> PathBuf {
+    std::env::var_os("APPIMAGE")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+        .or_else(|| std::env::current_exe().ok())
+        .unwrap_or_else(|| PathBuf::from("snip-clip"))
+}
+
+/// Quotes for a POSIX shell (GNOME parses custom shortcut commands that way).
+fn shell_quote(arg: &str) -> String {
+    if !arg.is_empty() && arg.chars().all(|c| c.is_ascii_alphanumeric() || "/._-+:".contains(c)) {
+        arg.to_string()
+    } else {
+        format!("'{}'", arg.replace('\'', "'\\''"))
+    }
+}
+
+fn save_replay_command() -> String {
+    let exe = self_exe().to_string_lossy().into_owned();
+    if cfg!(windows) {
+        format!("\"{exe}\" {}", crate::replay_save::SAVE_REPLAY_FLAG)
+    } else {
+        format!("{} {}", shell_quote(&exe), crate::replay_save::SAVE_REPLAY_FLAG)
+    }
+}
+
+/// OBS's WebSocket settings, for `--save-replay`.
+pub fn read_websocket_config() -> Result<Option<String>, String> {
+    read_optional(&websocket_path(&installed()?.config_dir))
+}
+
+#[cfg(any(target_os = "linux", test))]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+mod gnome {
+    pub const SCHEMA: &str = "org.gnome.settings-daemon.plugins.media-keys";
+    pub const PATH: &str = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/snip-clip-save-replay/";
+    /// Where GNOME keeps its own shortcuts, checked for clashes.
+    pub const SHORTCUT_SCHEMAS: [&str; 5] = [
+        "org.gnome.desktop.wm.keybindings",
+        "org.gnome.shell.keybindings",
+        "org.gnome.mutter.keybindings",
+        "org.gnome.mutter.wayland.keybindings",
+        "org.gnome.settings-daemon.plugins.media-keys",
+    ];
+
+    /// A GVariant string array as gsettings prints it: "['/a/', '/b/']" or "@as []".
+    pub fn parse_list(text: &str) -> Vec<String> {
+        text.trim()
+            .trim_start_matches("@as")
+            .trim()
+            .trim_start_matches('[')
+            .trim_end_matches(']')
+            .split(',')
+            .map(|s| s.trim().trim_matches('\'').to_string())
+            .filter(|s| !s.is_empty())
+            .collect()
+    }
+
+    pub fn format_list(items: &[String]) -> String {
+        format!("[{}]", items.iter().map(|s| format!("'{s}'")).collect::<Vec<_>>().join(", "))
+    }
+
+    /// A GVariant string literal.
+    pub fn string(value: &str) -> String {
+        format!("'{}'", value.replace('\\', "\\\\").replace('\'', "\\'"))
+    }
+
+    /// GNOME writes Control as <Primary> or <Ctrl> too; compare without case.
+    fn normalize(accel: &str) -> String {
+        accel.replace("<Primary>", "<Control>").replace("<Ctrl>", "<Control>").to_lowercase()
+    }
+
+    /// "schema key" of every shortcut in `gsettings list-recursively` output bound to `accel`.
+    pub fn conflicts(listing: &str, accel: &str) -> Vec<String> {
+        let wanted = normalize(accel);
+        listing
+            .lines()
+            .filter_map(|line| {
+                let mut parts = line.splitn(3, ' ');
+                let (schema, key, value) = (parts.next()?, parts.next()?, parts.next()?);
+                let bound = value.split('\'').skip(1).step_by(2).any(|a| normalize(a) == wanted);
+                bound.then(|| format!("{schema} {key}"))
+            })
+            .collect()
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn gsettings(args: &[&str]) -> Result<String, String> {
+    let out = Command::new("gsettings").args(args).output().map_err(|e| format!("gsettings: {e}"))?;
+    if out.status.success() {
+        Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+    } else {
+        Err(format!("gsettings: {}", String::from_utf8_lossy(&out.stderr).trim()))
+    }
+}
+
+/// Registers a GNOME custom shortcut that runs `snip-clip --save-replay` (FR-44). Returns the
+/// GNOME shortcuts already bound to the same keys, which the user has to free.
+#[cfg(target_os = "linux")]
+fn register_gnome_shortcut(accel: &str, name: &str) -> Result<Vec<String>, String> {
+    let mut list = gnome::parse_list(&gsettings(&["get", gnome::SCHEMA, "custom-keybindings"])?);
+    if !list.iter().any(|p| p == gnome::PATH) {
+        list.push(gnome::PATH.to_string());
+        gsettings(&["set", gnome::SCHEMA, "custom-keybindings", &gnome::format_list(&list)])?;
+    }
+    let schema = format!("{}.custom-keybinding:{}", gnome::SCHEMA, gnome::PATH);
+    gsettings(&["set", &schema, "name", &gnome::string(name)])?;
+    gsettings(&["set", &schema, "command", &gnome::string(&save_replay_command())])?;
+    gsettings(&["set", &schema, "binding", &gnome::string(accel)])?;
+    let listing: Vec<String> =
+        gnome::SHORTCUT_SCHEMAS.iter().filter_map(|s| gsettings(&["list-recursively", s]).ok()).collect();
+    Ok(gnome::conflicts(&listing.join("\n"), accel))
+}
+
+#[cfg(target_os = "linux")]
+fn unregister_gnome_shortcut() -> Result<(), String> {
+    let Ok(current) = gsettings(&["get", gnome::SCHEMA, "custom-keybindings"]) else { return Ok(()) };
+    let list: Vec<String> = gnome::parse_list(&current).into_iter().filter(|p| p != gnome::PATH).collect();
+    gsettings(&["set", gnome::SCHEMA, "custom-keybindings", &gnome::format_list(&list)])?;
+    let schema = format!("{}.custom-keybinding:{}", gnome::SCHEMA, gnome::PATH);
+    for key in ["name", "command", "binding"] {
+        let _ = gsettings(&["reset", &schema, key]);
+    }
+    Ok(())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn register_gnome_shortcut(_: &str, _: &str) -> Result<Vec<String>, String> {
+    Err("GNOME shortcuts are Linux only".into())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn unregister_gnome_shortcut() -> Result<(), String> {
+    Ok(())
+}
+
 #[tauri::command]
 pub fn obs_status() -> ObsStatus {
     let install = find_obs();
@@ -422,6 +564,8 @@ pub fn obs_status() -> ObsStatus {
         wayland: is_wayland(),
         app_audio_plugin: install.as_ref().is_some_and(has_app_audio_plugin),
         vaapi_device: vaapi_device(),
+        desktop: std::env::var("XDG_CURRENT_DESKTOP").ok().filter(|d| !d.is_empty() && cfg!(target_os = "linux")),
+        save_replay_command: save_replay_command(),
         install,
     }
 }
@@ -452,7 +596,7 @@ pub fn obs_remove_profile() -> Result<(), String> {
 
 #[tauri::command]
 pub fn obs_read_websocket() -> Result<Option<String>, String> {
-    read_optional(&websocket_path(&installed()?.config_dir))
+    read_websocket_config()
 }
 
 #[tauri::command]
@@ -470,6 +614,17 @@ pub fn obs_set_autostart(enabled: bool) -> Result<(), String> {
 #[tauri::command]
 pub fn obs_launch() -> Result<(), String> {
     launch()
+}
+
+/// `accel` in GNOME's format, e.g. "<Alt>F10"; `name` is shown in GNOME's keyboard settings.
+#[tauri::command]
+pub fn obs_register_gnome_shortcut(accel: String, name: String) -> Result<Vec<String>, String> {
+    register_gnome_shortcut(&accel, &name)
+}
+
+#[tauri::command]
+pub fn obs_unregister_gnome_shortcut() -> Result<(), String> {
+    unregister_gnome_shortcut()
 }
 
 #[cfg(test)]
@@ -539,6 +694,33 @@ mod tests {
     #[ignore = "depends on the OBS installed here"]
     fn real_obs_status() {
         println!("{}", serde_json::to_string_pretty(&obs_status()).unwrap());
+    }
+
+    #[test]
+    fn reads_and_writes_gnome_lists() {
+        assert!(gnome::parse_list("@as []").is_empty());
+        let list = gnome::parse_list("['/a/custom0/', '/a/custom1/']");
+        assert_eq!(list, ["/a/custom0/", "/a/custom1/"]);
+        assert_eq!(gnome::format_list(&list), "['/a/custom0/', '/a/custom1/']");
+        assert_eq!(gnome::string(r"it's C:\x"), r"'it\'s C:\\x'");
+    }
+
+    #[test]
+    fn finds_gnome_shortcuts_on_the_same_keys() {
+        let listing = "org.gnome.desktop.wm.keybindings toggle-maximized ['<Alt>F10']\n\
+                       org.gnome.desktop.wm.keybindings close ['<Alt>F4']\n\
+                       org.gnome.shell.keybindings screenshot ['<Shift>Print', '<Primary><Shift>s']\n\
+                       org.gnome.desktop.wm.keybindings minimize @as []";
+        assert_eq!(gnome::conflicts(listing, "<Alt>F10"), ["org.gnome.desktop.wm.keybindings toggle-maximized"]);
+        assert_eq!(gnome::conflicts(listing, "<Control><Shift>S"), ["org.gnome.shell.keybindings screenshot"]);
+        assert!(gnome::conflicts(listing, "<Alt>F9").is_empty());
+    }
+
+    #[test]
+    fn quotes_for_the_shell() {
+        assert_eq!(shell_quote("/usr/bin/snip-clip"), "/usr/bin/snip-clip");
+        assert_eq!(shell_quote("/opt/My Apps/snip-clip"), "'/opt/My Apps/snip-clip'");
+        assert_eq!(shell_quote("/x/it's"), r"'/x/it'\''s'");
     }
 
     #[test]

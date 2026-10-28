@@ -13,3 +13,4 @@ export * from "./project";
 export * from "./timecode";
 export * from "./version";
 export * from "./replayProfile";
+export * from "./hotkey";

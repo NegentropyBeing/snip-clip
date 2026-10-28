@@ -49,7 +49,7 @@ Acceptance criteria in [spec.md §16.5](spec.md#165-critérios-de-aceite-da-v02)
 
 ## v0.3 — Cut override
 
-Scope: [spec.md §17](spec.md#17-v03--ajuste-do-corte). Branch `per-cut-mix`.
+Scope: [spec.md §17](spec.md#17-v03--ajuste-do-corte).
 
 - [x] Core: cut overrides that keep only the tracks that differ from the mix, saved with the cuts, with tests
 - [x] Preview and waveform follow the cut override inside each cut

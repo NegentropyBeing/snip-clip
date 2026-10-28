@@ -22,26 +22,33 @@ export function parseEncoderList(stdout: string): Set<string> {
   return names;
 }
 
-/** A tiny encode that fails fast when the GPU/driver behind an encoder is missing. */
-export function testEncodeArgs(encoder: string): string[] {
+/**
+ * A tiny encode that fails fast when the GPU/driver behind an encoder is missing.
+ * VAAPI encoders need a render node (e.g. /dev/dri/renderD128) and frames uploaded to it.
+ */
+export function testEncodeArgs(encoder: string, vaapiDevice?: string): string[] {
+  const vaapi = encoder.endsWith("_vaapi");
   return [
     "-hide_banner", "-v", "error",
+    ...(vaapi && vaapiDevice ? ["-vaapi_device", vaapiDevice] : []),
     "-f", "lavfi", "-i", "color=black:s=320x240:r=30:d=0.2",
-    "-frames:v", "3", "-pix_fmt", "yuv420p", "-c:v", encoder, "-f", "null", "-",
+    "-frames:v", "3", ...(vaapi ? ["-vf", "format=nv12,hwupload"] : ["-pix_fmt", "yuv420p"]),
+    "-c:v", encoder, "-f", "null", "-",
   ];
 }
 
 /**
  * Encoders that can actually run on this machine (spec FR-26). Built-in CPU encoders are trusted
  * once listed; hardware encoders are listed by most builds even without the hardware, so each
- * one gets a test encode.
+ * one gets a test encode. `candidates` defaults to the export encoders; the replay profile
+ * passes its own (spec FR-41).
  */
-export async function detectEncoders(exec: Exec): Promise<Set<string>> {
+export async function detectEncoders(exec: Exec, candidates: readonly string[] = CANDIDATES, vaapiDevice?: string): Promise<Set<string>> {
   const listed = parseEncoderList((await exec(["-hide_banner", "-encoders"])).stdout);
   const usable = new Set<string>();
-  for (const name of CANDIDATES) {
+  for (const name of candidates) {
     if (!listed.has(name)) continue;
-    if (CPU_ENCODERS.has(name) || (await exec(testEncodeArgs(name))).code === 0) usable.add(name);
+    if (CPU_ENCODERS.has(name) || (await exec(testEncodeArgs(name, vaapiDevice))).code === 0) usable.add(name);
   }
   return usable;
 }

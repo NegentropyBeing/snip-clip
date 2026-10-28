@@ -35,7 +35,7 @@ Scope: [spec.md](spec.md).
 
 Scope: [spec.md §16](spec.md#16-v02--gravação-perfil-de-replay), [ADR 0001](docs/adr/0001-snip-clip-manages-the-replay-profile.md). Branch `replay-profile`.
 
-- [ ] Core: replay profile generation in TypeScript (OBS `basic.ini`, encoder settings, scene collection) with tests, reading back an installed profile
+- [x] Core: replay profile generation in TypeScript (OBS `basic.ini`, encoder settings, scene collection) with tests, reading back an installed profile
 - [ ] Backend: find OBS (Windows; Linux native or Flatpak), tell if it is running, read and write its files, backups, Linux audio plugin check
 - [ ] Settings split into General and Recording tabs
 - [ ] Recording tab: status, install / reconfigure (basic + Advanced), remove, open OBS now, start at login (off by default)

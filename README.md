@@ -9,7 +9,7 @@
 
 Cut one or many micro-clips from game recordings (OBS replays, NVIDIA app, anything FFmpeg reads) and export them ready to share — by default as **Discord-size files (≤ 20 MB)**.
 
-> **Status:** early preview (**v0.1.0**, Windows). It needs **FFmpeg on your `PATH`** for now — the in-app download, clipboard copy and settings screen are still to come. See [ROADMAP.md](ROADMAP.md) and [spec.md](spec.md) (Portuguese).
+> **Status:** early preview (**v0.1.0-beta.1**, Windows). It needs **FFmpeg on your `PATH`** for now — the in-app download, clipboard copy and settings screen are still to come. See [ROADMAP.md](ROADMAP.md) and [spec.md](spec.md) (Portuguese).
 
 ## What it will do (v0.1)
 

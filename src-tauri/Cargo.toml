@@ -1,6 +1,6 @@
 [package]
 name = "clip-snip"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 description = "Cut micro-clips from game recordings and export them to Discord-size files."
 authors = ["clip-snip contributors"]
 license = "GPL-3.0-only"

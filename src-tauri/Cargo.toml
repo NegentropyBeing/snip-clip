@@ -1,8 +1,8 @@
 [package]
-name = "clip-snip"
+name = "snip-clip"
 version = "0.1.0-beta.1"
 description = "Cut micro-clips from game recordings and export them to Discord-size files."
-authors = ["clip-snip contributors"]
+authors = ["snip-clip contributors"]
 license = "GPL-3.0-only"
 edition = "2024"
 
@@ -12,7 +12,7 @@ edition = "2024"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "clip_snip_lib"
+name = "snip_clip_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

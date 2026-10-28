@@ -7,7 +7,7 @@ const ptBR: Messages = {
   },
   ffmpeg: {
     missingTitle: "O FFmpeg é necessário",
-    missingBody: "O clip-snip usa o FFmpeg para ler, pré-visualizar e exportar vídeos. Ele não foi encontrado neste computador.",
+    missingBody: "O snip-clip usa o FFmpeg para ler, pré-visualizar e exportar vídeos. Ele não foi encontrado neste computador.",
     missingHow: "Por enquanto, instale o FFmpeg e deixe-o no PATH, depois tente de novo. O download pelo app está a caminho.",
     retry: "Tentar de novo",
   },

@@ -12,7 +12,7 @@ import {
 } from "../src/core";
 
 const hasFfmpeg = spawnSync("ffmpeg", ["-version"]).status === 0;
-const dir = mkdtempSync(join(tmpdir(), "clip-snip-it-"));
+const dir = mkdtempSync(join(tmpdir(), "snip-clip-it-"));
 
 function makeSource(name: string, hdr: boolean): string {
   const out = join(dir, name);

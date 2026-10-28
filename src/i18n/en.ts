@@ -5,7 +5,7 @@ const en = {
   },
   ffmpeg: {
     missingTitle: "FFmpeg is required",
-    missingBody: "clip-snip uses FFmpeg to read, preview and export videos. It was not found on this computer.",
+    missingBody: "snip-clip uses FFmpeg to read, preview and export videos. It was not found on this computer.",
     missingHow: "For now, install FFmpeg and make sure it is on your PATH, then retry. An in-app download is coming.",
     retry: "Retry",
   },

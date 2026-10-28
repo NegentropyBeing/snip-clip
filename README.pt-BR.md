@@ -1,11 +1,11 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark.png">
-    <img src="assets/brand/banner-light.png" alt="clip-snip" width="640">
+    <img src="assets/brand/banner-light.png" alt="snip-clip" width="640">
   </picture>
 </p>
 
-# clip-snip
+# snip-clip
 
 [English](README.md) · **Português**
 
@@ -25,14 +25,14 @@ Recorte um ou vários micro-clipes de gravações de jogos (replays do OBS, app 
 ## Instalação (beta para Windows)
 
 1. Instale o FFmpeg e deixe-o no `PATH`, por exemplo com `winget install Gyan.FFmpeg`. Abra um terminal novo e confira com `ffmpeg -version`.
-2. Baixe o `clip-snip_<versão>_x64-setup.exe` em [Releases](https://github.com/NegentropyBeing/clip-snip/releases) e execute.
+2. Baixe o `snip-clip_<versão>_x64-setup.exe` em [Releases](https://github.com/NegentropyBeing/snip-clip/releases) e execute.
 3. O instalador ainda não tem assinatura digital, então o Windows SmartScreen pode avisar. Clique em *Mais informações → Executar assim mesmo*.
 
 Os clipes exportados vão para `Vídeos\Clips`.
 
 ## Gravando com o OBS (Windows)
 
-A pasta [`extras/obs/`](extras/obs) configura o OBS Studio como um gravador de "replay instantâneo" com os arquivos que o clip-snip aproveita melhor: o replay buffer fica sempre ligado (salve com **Alt+F10**) e cada fonte vai para uma faixa de áudio própria com nome (*Mix, Jogo, Discord, Navegador, Microfone, Sistema*), para você poder tirar o Discord ou o navegador de um clipe depois.
+A pasta [`extras/obs/`](extras/obs) configura o OBS Studio como um gravador de "replay instantâneo" com os arquivos que o snip-clip aproveita melhor: o replay buffer fica sempre ligado (salve com **Alt+F10**) e cada fonte vai para uma faixa de áudio própria com nome (*Mix, Jogo, Discord, Navegador, Microfone, Sistema*), para você poder tirar o Discord ou o navegador de um clipe depois.
 
 > [!IMPORTANT]
 > **Desligue o NVIDIA Instant Replay (ShadowPlay) antes de usar este perfil.** Os dois usam **Alt+F10** para salvar o replay, e com os dois ligados ficam dois replay buffers e dois encoders de GPU ocupados, dobrando o uso de RAM e de encoder. No app da NVIDIA, pressione **Alt+Z** e desligue o **Instant Replay**.
@@ -43,7 +43,7 @@ Para os nomes das faixas em português, crie o perfil com `--lang pt`.
 
 ## Privacidade
 
-O clip-snip **não tem telemetria**: nada de analytics, dados de uso ou relatórios de erro. Ele só acessa a internet para baixar o FFmpeg (depois que você confirmar) e para consultar o GitHub Releases em busca de versão nova.
+O snip-clip **não tem telemetria**: nada de analytics, dados de uso ou relatórios de erro. Ele só acessa a internet para baixar o FFmpeg (depois que você confirmar) e para consultar o GitHub Releases em busca de versão nova.
 
 ## Desenvolvimento
 

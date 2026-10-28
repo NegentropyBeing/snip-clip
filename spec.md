@@ -1,10 +1,10 @@
-# clip-snip — Especificação v0.1
+# snip-clip — Especificação v0.1
 
 > Status: **rascunho aprovado** · Versão alvo: **v0.1** · Licença: **GPL-3.0** · Nome provisório
 
 ## 1. Visão geral
 
-**clip-snip** é um aplicativo de desktop para recortar um ou vários **micro-clipes** de gravações de jogos — principalmente os replays do OBS — e exportá-los prontos para compartilhar, com destaque para o limite de upload gratuito do Discord (**20 MB**).
+**snip-clip** é um aplicativo de desktop para recortar um ou vários **micro-clipes** de gravações de jogos — principalmente os replays do OBS — e exportá-los prontos para compartilhar, com destaque para o limite de upload gratuito do Discord (**20 MB**).
 
 O fluxo central:
 
@@ -52,7 +52,7 @@ Ver [Roadmap](#13-roadmap-pós-v01). Em resumo: efeitos, texto, recorte vertical
 ## 4. Arquitetura
 
 ```
-┌──────────────────────────────── clip-snip (Tauri v2) ────────────────────────────────┐
+┌──────────────────────────────── snip-clip (Tauri v2) ────────────────────────────────┐
 │                                                                                       │
 │  UI (React + TypeScript + Vite + Tailwind + Zustand)                                  │
 │   ├─ Player (<video> sem som)  ─┐                                                     │

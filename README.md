@@ -1,11 +1,11 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark.png">
-    <img src="assets/brand/banner-light.png" alt="clip-snip" width="640">
+    <img src="assets/brand/banner-light.png" alt="snip-clip" width="640">
   </picture>
 </p>
 
-# clip-snip
+# snip-clip
 
 **English** · [Português](README.pt-BR.md)
 
@@ -25,14 +25,14 @@ Cut one or many micro-clips from game recordings (OBS replays, NVIDIA app, anyth
 ## Install (Windows beta)
 
 1. Install FFmpeg and make sure it is on your `PATH`, for example with `winget install Gyan.FFmpeg`. Open a new terminal and check with `ffmpeg -version`.
-2. Download `clip-snip_<version>_x64-setup.exe` from [Releases](https://github.com/NegentropyBeing/clip-snip/releases) and run it.
+2. Download `snip-clip_<version>_x64-setup.exe` from [Releases](https://github.com/NegentropyBeing/snip-clip/releases) and run it.
 3. The installer is not code-signed yet, so Windows SmartScreen may warn. Choose *More info → Run anyway*.
 
 Exported clips go to `Videos\Clips`.
 
 ## Recording with OBS (Windows)
 
-[`extras/obs/`](extras/obs) sets OBS Studio up as an "instant replay" recorder whose files clip-snip handles best: the replay buffer is always on (save with **Alt+F10**), and every source goes to its own named audio track (*Mix, Game, Discord, Browser, Mic, System*), so you can drop Discord or the browser from a clip later.
+[`extras/obs/`](extras/obs) sets OBS Studio up as an "instant replay" recorder whose files snip-clip handles best: the replay buffer is always on (save with **Alt+F10**), and every source goes to its own named audio track (*Mix, Game, Discord, Browser, Mic, System*), so you can drop Discord or the browser from a clip later.
 
 > [!IMPORTANT]
 > **Turn off NVIDIA Instant Replay (ShadowPlay) before using this profile.** Both use **Alt+F10** to save a replay, and running both keeps two replay buffers and two GPU encoders busy, doubling RAM use and encoder load. In the NVIDIA app, press **Alt+Z** and switch **Instant Replay** off.
@@ -41,7 +41,7 @@ Exported clips go to `Videos\Clips`.
 
 ## Privacy
 
-clip-snip has **no telemetry**: no analytics, no usage data, no crash reports. It only goes online to download FFmpeg (after you confirm) and to check GitHub Releases for a new version.
+snip-clip has **no telemetry**: no analytics, no usage data, no crash reports. It only goes online to download FFmpeg (after you confirm) and to check GitHub Releases for a new version.
 
 ## Development
 

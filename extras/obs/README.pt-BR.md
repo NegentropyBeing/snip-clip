@@ -2,7 +2,7 @@
 
 [English](README.md) · **Português**
 
-Isto configura o OBS Studio no Windows como um gravador de "replay instantâneo" sempre ligado: os últimos minutos ficam na memória e são salvos num arquivo quando você aperta **Alt+F10**. Cada fonte de áudio ganha uma faixa própria com nome, então no clip-snip você pode tirar o Discord ou o navegador de um clipe, ou abaixar o microfone.
+Isto configura o OBS Studio no Windows como um gravador de "replay instantâneo" sempre ligado: os últimos minutos ficam na memória e são salvos num arquivo quando você aperta **Alt+F10**. Cada fonte de áudio ganha uma faixa própria com nome, então no snip-clip você pode tirar o Discord ou o navegador de um clipe, ou abaixar o microfone.
 
 | Faixa | Nome | Conteúdo |
 |---|---|---|
@@ -36,7 +36,7 @@ python obs-setup.py --lang pt
 
 Se `python` abrir a Microsoft Store, use `py obs-setup.py --lang pt`.
 
-Isso cria um perfil e uma coleção de cenas, ambos chamados **clip-snip Replay**, com:
+Isso cria um perfil e uma coleção de cenas, ambos chamados **snip-clip Replay**, com:
 
 - buffer de 3 minutos, salvo com **Alt+F10**
 - a resolução da sua tela principal a 60 fps
@@ -44,7 +44,7 @@ Isso cria um perfil e uma coleção de cenas, ambos chamados **clip-snip Replay*
 - replays salvos em `Vídeos\OBS Replays`
 - Chrome e Firefox na faixa Navegador
 
-Seus outros perfis do OBS não são alterados. Se já existir um perfil **clip-snip Replay**, ele é copiado antes para `%APPDATA%\obs-studio\basic\backup-<data>\`.
+Seus outros perfis do OBS não são alterados. Se já existir um perfil **snip-clip Replay**, ele é copiado antes para `%APPDATA%\obs-studio\basic\backup-<data>\`.
 
 ### Opções
 
@@ -90,15 +90,15 @@ Agora o OBS inicia junto com o Windows, pronto para salvar replays. Você també
 
 ### Manualmente, dentro do OBS
 
-1. Menu **Perfil** → **clip-snip Replay**.
-2. Menu **Coleção de cenas** → **clip-snip Replay**.
+1. Menu **Perfil** → **snip-clip Replay**.
+2. Menu **Coleção de cenas** → **snip-clip Replay**.
 3. Clique em **Iniciar buffer de replay** no painel *Controles*.
 
 ## 5. Confira se funciona
 
 1. Toque algo por alguns segundos: um jogo, uma call no Discord, um vídeo no navegador.
 2. Aperte **Alt+F10**. Um arquivo chamado `Replay <data> <hora>.mp4` aparece na pasta de saída.
-3. Abra no clip-snip: as faixas devem aparecer pelo nome e cada uma deve tocar só o próprio áudio.
+3. Abra no snip-clip: as faixas devem aparecer pelo nome e cada uma deve tocar só o próprio áudio.
 
 Para ver qual fonte vai para qual faixa, no OBS vá em *Editar → Propriedades avançadas de áudio*.
 
@@ -108,7 +108,7 @@ Para ver qual fonte vai para qual faixa, no OBS vá em *Editar → Propriedades 
 - **Replays mais longos.** Aumente o `--buffer`; o limite de memória cresce junto, cerca de 0,8 GB de RAM por minuto no bitrate máximo. No OBS você também pode mudar em *Configurações → Saída → Buffer de replay*, nos campos *Tempo máximo* e *Memória máxima*. Vale o limite que for atingido primeiro, então aumente os dois juntos.
 - **Outro atalho.** Mude no OBS em *Configurações → Atalhos → Salvar replay*.
 - **Desfazer.** Escolha outro perfil e outra coleção de cenas no OBS. Para restaurar uma versão anterior, feche o OBS e copie os arquivos de volta de `%APPDATA%\obs-studio\basic\backup-<data>\`:
-  - a pasta `profile-clip-snip Replay` vai para `profiles\clip-snip Replay`;
+  - a pasta `profile-snip-clip Replay` vai para `profiles\snip-clip Replay`;
   - o arquivo `.json` vai para `scenes\`.
 
 Os nomes dos menus do OBS acima são os da interface em português e podem variar um pouco entre versões.

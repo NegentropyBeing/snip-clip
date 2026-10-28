@@ -2,7 +2,7 @@
 
 **English** · [Português](README.pt-BR.md)
 
-This sets OBS Studio up as an always-on "instant replay" recorder on Windows: the last few minutes are kept in memory and saved to a file when you press **Alt+F10**. Every audio source gets its own named track, so in clip-snip you can drop Discord or the browser from a clip, or turn your mic down.
+This sets OBS Studio up as an always-on "instant replay" recorder on Windows: the last few minutes are kept in memory and saved to a file when you press **Alt+F10**. Every audio source gets its own named track, so in snip-clip you can drop Discord or the browser from a clip, or turn your mic down.
 
 | Track | Name | Contents |
 |---|---|---|
@@ -34,7 +34,7 @@ python obs-setup.py
 
 If `python` opens the Microsoft Store, use `py obs-setup.py` instead.
 
-That creates a profile and a scene collection, both named **clip-snip Replay**, with:
+That creates a profile and a scene collection, both named **snip-clip Replay**, with:
 
 - a 3-minute buffer, saved with **Alt+F10**
 - your main screen's resolution at 60 fps
@@ -43,7 +43,7 @@ That creates a profile and a scene collection, both named **clip-snip Replay**, 
 - Chrome and Firefox on the Browser track
 - track names in your Windows display language (English or Portuguese)
 
-Your other OBS profiles are not touched. If a **clip-snip Replay** profile already exists, it is backed up to `%APPDATA%\obs-studio\basic\backup-<date>\` first.
+Your other OBS profiles are not touched. If a **snip-clip Replay** profile already exists, it is backed up to `%APPDATA%\obs-studio\basic\backup-<date>\` first.
 
 ### Options
 
@@ -89,15 +89,15 @@ OBS will now start with Windows, ready to save replays. You can also double-clic
 
 ### By hand, inside OBS
 
-1. **Profile** menu → **clip-snip Replay**.
-2. **Scene Collection** menu → **clip-snip Replay**.
+1. **Profile** menu → **snip-clip Replay**.
+2. **Scene Collection** menu → **snip-clip Replay**.
 3. Click **Start Replay Buffer** in the *Controls* panel.
 
 ## 5. Check that it works
 
 1. Play something for a few seconds: a game, a Discord call, a video in the browser.
 2. Press **Alt+F10**. A file named `Replay <date> <time>.mp4` appears in the output folder.
-3. Open it in clip-snip: the tracks should be listed by name and each one should play only its own audio.
+3. Open it in snip-clip: the tracks should be listed by name and each one should play only its own audio.
 
 To see which source goes to which track, go to OBS → *Edit → Advanced Audio Properties*.
 
@@ -107,5 +107,5 @@ To see which source goes to which track, go to OBS → *Edit → Advanced Audio 
 - **Longer replays.** Raise `--buffer`; the memory limit grows to match, about 0.8 GB of RAM per minute at the peak bitrate. In OBS you can also change *Settings → Output → Replay Buffer → Maximum Replay Time* and *Maximum Memory*. Whichever limit is reached first wins, so raise both together.
 - **Different hotkey.** Change it in OBS under *Settings → Hotkeys → Save Replay*.
 - **Undo.** Pick another profile and scene collection in OBS. To restore a previous version, close OBS and copy the files back from `%APPDATA%\obs-studio\basic\backup-<date>\`:
-  - the `profile-clip-snip Replay` folder goes to `profiles\clip-snip Replay`;
+  - the `profile-snip-clip Replay` folder goes to `profiles\snip-clip Replay`;
   - the `.json` file goes to `scenes\`.

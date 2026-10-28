@@ -1,4 +1,4 @@
-"""Creates an OBS Studio profile and scene collection, "clip-snip Replay", tuned for clip-snip (Windows).
+"""Creates an OBS Studio profile and scene collection, "snip-clip Replay", tuned for snip-clip (Windows).
 
 Replay buffer always on, one audio track per source (game, Discord, browser, mic, system),
 saved with a hotkey. Close OBS before running. The current profile and collection with the
@@ -19,7 +19,7 @@ import sys
 import uuid
 from datetime import datetime
 
-NAME = "clip-snip Replay"
+NAME = "snip-clip Replay"
 BASIC = os.path.join(os.environ.get("APPDATA", ""), "obs-studio", "basic")
 PROFILE_DIR = os.path.join(BASIC, "profiles", NAME)
 COLLECTION = os.path.join(BASIC, "scenes", NAME.replace(" ", "_") + ".json")

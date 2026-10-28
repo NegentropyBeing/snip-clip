@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn write_read_and_prune() {
-        let dir = std::env::temp_dir().join(format!("clip-snip-files-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("snip-clip-files-{}", std::process::id()));
         let file = dir.join("nested").join("p.json");
         let path = file.to_string_lossy().to_string();
         assert_eq!(read_text(path.clone()).unwrap(), None);

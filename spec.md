@@ -29,7 +29,7 @@ O fluxo central:
 
 ### 1.3 Fora de escopo da v0.1
 
-Ver [Roadmap](#13-roadmap-pós-v01). Em resumo: efeitos, texto, recorte vertical, transições, GIF/WebM, webhook, galeria de pastas, auto-atualização.
+Ver [Roadmap](#13-roadmap-pós-v01). Em resumo: efeitos, texto, recorte vertical, transições, GIF/WebM, webhook, galeria de pastas.
 
 ## 2. Usuários
 

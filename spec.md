@@ -245,7 +245,6 @@ Escolher o primeiro degrau cujo bitrate mínimo cabe no orçamento. Nunca aument
 | **Galeria** com miniaturas de uma pasta (ex.: `F:\OBS Replays`) | Abertura |
 | Formatos **GIF** e WebM | Saída |
 | Forma de onda **por faixa** | Linha do tempo |
-| **Auto-atualização** (Tauri updater) | Distribuição |
 | Assinatura de código (Windows / macOS) | Distribuição |
 | "Modo biblioteca" (compressão em lote) — projeto separado | Fora do app |
 

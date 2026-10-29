@@ -68,8 +68,6 @@ Scope: [spec.md §17](spec.md#17-v03--ajuste-do-corte).
 | Folder **gallery** with thumbnails | Opening |
 | **GIF** and WebM output | Output |
 | Lock export resolution / fps by hand (spec §6.2) | Export |
-| HDR → SDR: check the tone mapping against a reference player; gamut mapping for very saturated colors | Export |
-| Auto-update (Tauri updater) | Distribution |
 | Stream-copy montage (needs temporary segments) | Export |
 | Replay profile on macOS (ScreenCaptureKit, VideoToolbox) | Recording |
 | Register the save-replay hotkey on KDE Plasma | Recording |

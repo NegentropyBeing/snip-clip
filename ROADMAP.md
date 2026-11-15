@@ -84,7 +84,7 @@ Scope: [spec.md §19](spec.md#19-v05--zoom).
 | Feature | Area |
 |---|---|
 | Vertical 9:16 crop, text/captions, fades | Editing |
-| Animated zoom, speed-up (2×), frame interpolation for slow motion | Effects |
+| Animated zoom, speed-up (2×) | Effects |
 | Discord **webhook** upload ("destinations" are planned in the v0.1 design) | After export |
 | Montage transitions (fade / crossfade) | Montage |
 | Folder **gallery** with thumbnails | Opening |

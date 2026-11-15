@@ -240,7 +240,7 @@ Escolher o primeiro degrau cujo bitrate mínimo cabe no orçamento. Nunca aument
 | Funcionalidade | Origem |
 |---|---|
 | Recorte vertical 9:16, texto/legenda, fade (câmera lenta: §18; zoom: §19) | Escopo de edição |
-| Zoom animado, acelerar (2×), interpolação de quadros na câmera lenta | Efeitos |
+| Zoom animado, acelerar (2×) | Efeitos |
 | Envio via **webhook** do Discord (arquitetura de "destinos" já prevista) | Pós-exportação |
 | Transições na montagem (fade / crossfade) | Montagem |
 | **Galeria** com miniaturas de uma pasta (ex.: `F:\OBS Replays`) | Abertura |
@@ -394,7 +394,9 @@ Um **efeito** (ver [GLOSSARY.md](GLOSSARY.md)) é uma parte de um corte que toca
 
 ### 18.5 Fora de escopo da v0.4
 
-Zoom (§19); acelerar; interpolação de quadros (a testar em outro momento); transição suave na entrada e na saída do efeito.
+Zoom (§19); acelerar; transição suave na entrada e na saída do efeito.
+
+Interpolação de quadros: testada com o `minterpolate` do FFmpeg e descartada. A exportação ficou de 25 a 65 vezes mais lenta e a diferença visual não compensou.
 
 ### 18.6 Critérios de aceite da v0.4
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { planOutput } from "./bitrate";
-import { MAX_ATTEMPTS, runExport, type FfmpegRunner } from "./export";
+import { exportDuration, MAX_ATTEMPTS, runExport, type FfmpegRunner } from "./export";
 import type { ExportRequest } from "./ffmpeg";
 import { PRESETS } from "./presets";
 import type { MediaInfo } from "./types";
@@ -36,6 +36,25 @@ function fakeRunner(overshoot: number) {
   };
   return { runner, bitrates };
 }
+
+describe("exportDuration (FR-69, FR-71)", () => {
+  const slow = [{ id: "a", name: "", startSec: 0, endSec: 10, effects: [{ id: "x", startSec: 2, endSec: 6, speed: 0.25 }] }];
+
+  it("is the output duration for re-encoded presets and the source duration for stream copy", () => {
+    expect(exportDuration(slow, PRESETS["discord-20"])).toBeCloseTo(22);
+    expect(exportDuration(slow, PRESETS.original)).toBe(10);
+  });
+
+  it("drives the size budget and the low-quality warning", () => {
+    const preset = PRESETS["discord-20"];
+    const plain = planOutput(preset, media, 10);
+    const slowed = planOutput(preset, media, exportDuration(slow, preset));
+    expect(slowed.videoKbps!).toBeLessThan(plain.videoKbps! / 2);
+    const long = [{ ...slow[0], endSec: 60, effects: [{ id: "x", startSec: 0, endSec: 60, speed: 0.25 }] }];
+    expect(planOutput(preset, media, 60).lowQuality).toBe(false);
+    expect(planOutput(preset, media, exportDuration(long, preset)).lowQuality).toBe(true);
+  });
+});
 
 describe("runExport", () => {
   it("accepts the first attempt when it fits", async () => {

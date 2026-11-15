@@ -2,7 +2,7 @@
 import { appCacheDir, join } from "@tauri-apps/api/path";
 import { create } from "zustand";
 import {
-  clipFileName, montageFileName, pickBackend, planOutput, PRESETS, runExport, totalDuration, uniqueNameAsync,
+  clipFileName, exportDuration, montageFileName, pickBackend, planOutput, PRESETS, runExport, uniqueNameAsync,
   type Cut, type ExportResult, type MediaInfo, type PresetId, type TrackMix,
 } from "../core";
 import i18n from "../i18n";
@@ -63,7 +63,7 @@ export function enqueueExport(): number {
     status: "queued",
     progress: 0,
     pass: 0,
-    lowQuality: planOutput(preset, s.media!, totalDuration(cuts)).lowQuality,
+    lowQuality: planOutput(preset, s.media!, exportDuration(cuts, preset)).lowQuality,
     input: { media: s.media!, cuts, mix: s.mix, presetId: s.presetId, keepSeparateTracks: s.keepSeparateTracks, baseName },
   }));
   useExports.setState((st) => ({ jobs: [...st.jobs, ...jobs] }));
@@ -118,7 +118,8 @@ export async function copyToClipboard(paths: string[]) {
 async function runJob(job: ExportJob) {
   const { media, cuts, mix, presetId, keepSeparateTracks, baseName } = job.input;
   const preset = PRESETS[presetId];
-  const duration = totalDuration(cuts);
+  // Output length: effects make the file longer than the cuts (FR-69); FFmpeg reports progress in it.
+  const duration = exportDuration(cuts, preset);
   let outPath: string | null = null;
   patch(job.id, { status: "running" });
   try {

@@ -1,4 +1,6 @@
 import { cutMix } from "./cutOverride";
+import { cutPieces, hasEffects, type Piece } from "./effects";
+import { cropRect } from "./zoom";
 import { ENCODER_NAMES } from "./encoders";
 import type { Cut, EncoderBackend, MediaInfo, OutputPlan, Preset, TrackMix, VideoCodec } from "./types";
 
@@ -41,14 +43,19 @@ function inputArgs(req: ExportRequest): string[] {
   return req.cuts.flatMap((c) => ["-ss", sec(c.startSec), "-t", sec(c.endSec - c.startSec), "-i", req.media.path]);
 }
 
-function videoFilters(req: ExportRequest): string {
+const hasZoom = (cut: Cut) => cut.effects?.some((e) => e.zoom) ?? false;
+
+/** `retimed`: the cut has effects, so `fps` repeats the slowed frames back to a constant rate (FR-68). */
+function videoFilters(req: ExportRequest, retimed = false): string {
   const { plan, media, preset, backend } = req;
   const f: string[] = [];
   if (plan.tonemap) f.push(TONEMAP);
   if (plan.height < media.height) f.push(`scale=-2:${plan.height}:flags=lanczos`);
-  if (plan.fps < media.fps - 0.01) f.push(`fps=${plan.fps}`);
+  if (retimed || plan.fps < media.fps - 0.01) f.push(`fps=${plan.fps}`);
   const tenBit = preset.sizeLimitBytes === null;
   f.push(`format=${tenBit ? (backend === "cpu" ? "yuv420p10le" : "p010le") : "yuv420p"}`);
+  // Zoomed pieces are rescaled, which can change the pixel shape; concat needs it equal in every cut.
+  if (req.cuts.some(hasZoom)) f.push("setsar=1");
   return f.join(",");
 }
 
@@ -58,6 +65,80 @@ interface Graph {
   audioOuts: string[];
 }
 
+const num = (n: number) => String(Number(n.toFixed(6)));
+
+/** atempo keeps the pitch; older FFmpeg builds take 0.5..2 per instance, so slower speeds chain it. */
+export function atempoChain(speed: number): string[] {
+  const out: string[] = [];
+  let s = speed;
+  for (; s < 0.5 - 1e-9; s /= 0.5) out.push("atempo=0.5");
+  for (; s > 2 + 1e-9; s /= 2) out.push("atempo=2");
+  if (Math.abs(s - 1) > 1e-9) out.push(`atempo=${num(s)}`);
+  return out;
+}
+
+/**
+ * Plays a cut with effects (FR-68, FR-77): the cut is split where the speed or zoom changes, each piece
+ * is slowed (video by stretching timestamps, audio with atempo) and zoomed, and the pieces are joined
+ * back in order.
+ */
+function retime(req: ExportRequest, cut: Cut, k: number, audioIn: string[], parts: string[]): { video: string; audio: string[] } {
+  const pieces = cutPieces(cut);
+  const n = pieces.length;
+  const vf = videoFilters(req, true);
+  // Input-side seeking puts the cut start at 0; the first and last pieces stay open-ended.
+  const range = (p: Piece, i: number) =>
+    [i > 0 ? `start=${sec(p.startSec - cut.startSec)}` : "", i < n - 1 ? `end=${sec(p.endSec - cut.startSec)}` : ""].filter(Boolean).join(":");
+  // A zoomed piece is cropped to its region and scaled back to the frame size, so the pieces can be
+  // joined and the usual filters (tone mapping, resolution ladder) apply to the whole cut (FR-77).
+  const zoomed = hasZoom(cut);
+  const { width, height } = req.media;
+  const zoomChain = (p: Piece) => {
+    if (!p.zoom) return [];
+    const r = cropRect(p.zoom, width, height);
+    return [`crop=${r.w}:${r.h}:${r.x}:${r.y}`, `scale=${width}:${height}:flags=lanczos`];
+  };
+  const videoChain = (p: Piece, i: number) =>
+    [
+      n > 1 ? `trim=${range(p, i)}` : null,
+      p.speed === 1 ? "setpts=PTS-STARTPTS" : `setpts=(PTS-STARTPTS)/${num(p.speed)}`,
+      ...zoomChain(p),
+      zoomed ? "setsar=1" : null,
+    ].filter(Boolean).join(",");
+  const audioChain = (p: Piece, i: number) =>
+    [n > 1 ? `atrim=${range(p, i)}` : null, "asetpts=PTS-STARTPTS", ...atempoChain(p.speed)].filter(Boolean).join(",");
+
+  if (n === 1) {
+    parts.push(`[${k}:v:0]${videoChain(pieces[0], 0)},${vf}[v${k}]`);
+    const audio = audioIn.map((l) => {
+      parts.push(`[${l}]${audioChain(pieces[0], 0)}[${l}t]`);
+      return `${l}t`;
+    });
+    return { video: `v${k}`, audio };
+  }
+  const labels = (prefix: string) => pieces.map((_, i) => `${prefix}${i}`);
+  const list = (ls: string[]) => ls.map((l) => `[${l}]`).join("");
+  const splitV = labels(`s${k}_`);
+  parts.push(`[${k}:v:0]split=${n}${list(splitV)}`);
+  const videoPieces = pieces.map((p, i) => {
+    parts.push(`[${splitV[i]}]${videoChain(p, i)}[p${k}_${i}]`);
+    return `p${k}_${i}`;
+  });
+  const audioPieces = audioIn.map((l) => {
+    const splitA = labels(`${l}s`);
+    parts.push(`[${l}]asplit=${n}${list(splitA)}`);
+    return pieces.map((p, i) => {
+      parts.push(`[${splitA[i]}]${audioChain(p, i)}[${l}p${i}]`);
+      return `${l}p${i}`;
+    });
+  });
+  const inputs = pieces.map((_, i) => list([videoPieces[i], ...audioPieces.map((a) => a[i])])).join("");
+  const audio = audioIn.map((_, j) => `ca${k}_${j}`);
+  parts.push(`${inputs}concat=n=${n}:v=1:a=${audioIn.length}[c${k}]${list(audio)}`);
+  parts.push(`[c${k}]${vf}[v${k}]`);
+  return { video: `v${k}`, audio };
+}
+
 function buildGraph(req: ExportRequest, includeAudio: boolean): Graph {
   const tracks = includeAudio ? enabledTracks(req) : [];
   const mixed = !(req.keepSeparateTracks && req.preset.sizeLimitBytes === null);
@@ -65,7 +146,6 @@ function buildGraph(req: ExportRequest, includeAudio: boolean): Graph {
   const parts: string[] = [];
   // Per cut: one video label and the audio labels for that segment.
   const segments = req.cuts.map((cut, k) => {
-    parts.push(`[${k}:v:0]${vf}[v${k}]`);
     const audio: string[] = [];
     const mix = cutMix(req.mix, cut);
     if (tracks.length > 0) {
@@ -82,6 +162,9 @@ function buildGraph(req: ExportRequest, includeAudio: boolean): Graph {
         audio.push(`a${k}`);
       }
     }
+    // The mix and the cut override apply inside effects like in the rest of the cut.
+    if (hasEffects(cut)) return retime(req, cut, k, audio, parts);
+    parts.push(`[${k}:v:0]${vf}[v${k}]`);
     return { video: `v${k}`, audio };
   });
 

@@ -1,5 +1,7 @@
+import { MAX_SPEED, MIN_SPEED, trimEffects } from "./effects";
+import { clampZoom } from "./zoom";
 import { PRESETS } from "./presets";
-import type { Cut, CutOverride, OutputMode, PresetId, TrackMix } from "./types";
+import type { Cut, CutOverride, Effect, OutputMode, PresetId, TrackMix, Zoom } from "./types";
 
 /** What the editor auto-saves per video (spec FR-13). */
 export interface ProjectFile {
@@ -43,6 +45,27 @@ function parseOverride(raw: unknown, trackCount: number): CutOverride | undefine
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
+/** An effect's zoom (FR-72), clamped to 1×–4× and inside the frame; undefined when malformed. */
+function parseZoom(raw: unknown): Zoom | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const { x, y, level } = raw as Record<string, unknown>;
+  return isNum(x) && isNum(y) && isNum(level) ? clampZoom({ x, y, level }) : undefined;
+}
+
+/** A cut's well-formed effects (FR-61); trimEffects() then fits them to the cut. Unknown fields are dropped. */
+function parseEffects(raw: unknown): Effect[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out = raw.flatMap((e): Effect[] => {
+    if (typeof e !== "object" || e === null) return [];
+    const { id, startSec, endSec, speed, zoom } = e as Record<string, unknown>;
+    const ok = typeof id === "string" && isNum(startSec) && isNum(endSec) && isNum(speed) && speed >= MIN_SPEED && speed <= MAX_SPEED;
+    if (!ok) return [];
+    const z = parseZoom(zoom);
+    return [z ? { id, startSec, endSec, speed, zoom: z } : { id, startSec, endSec, speed }];
+  });
+  return out.length > 0 ? out : undefined;
+}
+
 /** Parses a saved project, dropping anything malformed instead of failing the whole file. */
 export function parseProject(json: string, trackCount: number): Omit<ProjectFile, "version" | "path"> | null {
   let raw: unknown;
@@ -59,9 +82,10 @@ export function parseProject(json: string, trackCount: number): Omit<ProjectFile
         typeof c === "object" && c !== null && typeof c.id === "string" && typeof c.name === "string"
         && isNum(c.startSec) && isNum(c.endSec) && c.endSec > c.startSec,
     )
-    .map(({ id, name, startSec, endSec, override }): Cut => {
+    .map(({ id, name, startSec, endSec, override, effects }): Cut => {
       const kept = parseOverride(override, trackCount);
-      return kept ? { id, name, startSec, endSec, override: kept } : { id, name, startSec, endSec };
+      const fx = parseEffects(effects);
+      return trimEffects({ id, name, startSec, endSec, ...(kept ? { override: kept } : {}), ...(fx ? { effects: fx } : {}) });
     });
   const savedMix = Array.isArray(p.mix) ? p.mix : [];
   const mix = Array.from({ length: trackCount }, (_, i): TrackMix => parseTrackMix(savedMix[i]) ?? { enabled: true, volume: 1 });

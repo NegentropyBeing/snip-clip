@@ -34,6 +34,10 @@ _Avoid_: volume track, audio settings
 The tracks where one cut differs from the video's mix.
 _Avoid_: cut mix, per-cut volume track
 
+**Effect** (pt-BR: *efeito*):
+A part of a cut that plays at another speed, zoomed in, or both.
+_Avoid_: segment, range, slow-mo
+
 ### Exporting
 
 **Preset**:

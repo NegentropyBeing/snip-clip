@@ -1,5 +1,6 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { formatTimecode, parseTimecode } from "../core";
+import type { TFunction } from "i18next";
+import { formatTimecode, parseTimecode, type Effect } from "../core";
 
 export function Kbd({ children }: { children: ReactNode }) {
   return (
@@ -87,6 +88,17 @@ export function formatDuration(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = Math.round(sec % 60);
   return `${m} min ${s} s`;
+}
+
+/** Effect speed in the UI language: "0.5×", "0,5×". */
+export function formatSpeed(speed: number, language: string): string {
+  return `${new Intl.NumberFormat(language).format(speed)}×`;
+}
+
+/** What an effect does: "0.5×", "zoom 2×", "0.5× · zoom 2×" (FR-75). */
+export function effectLabel(t: TFunction, language: string, e: Effect): string {
+  const parts = [e.speed !== 1 ? formatSpeed(e.speed, language) : null, e.zoom ? t("effects.zoomLevel", { level: formatSpeed(e.zoom.level, language) }) : null];
+  return parts.filter(Boolean).join(" · ") || formatSpeed(1, language);
 }
 
 /** Settings row: label on the left, control and hint on the right. */

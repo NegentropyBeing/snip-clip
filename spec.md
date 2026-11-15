@@ -239,7 +239,8 @@ Escolher o primeiro degrau cujo bitrate mínimo cabe no orçamento. Nunca aument
 
 | Funcionalidade | Origem |
 |---|---|
-| Recorte vertical 9:16, câmera lenta, texto/legenda, fade | Escopo de edição |
+| Recorte vertical 9:16, texto/legenda, fade (câmera lenta: §18; zoom: §19) | Escopo de edição |
+| Zoom animado, acelerar (2×), interpolação de quadros na câmera lenta | Efeitos |
 | Envio via **webhook** do Discord (arquitetura de "destinos" já prevista) | Pós-exportação |
 | Transições na montagem (fade / crossfade) | Montagem |
 | **Galeria** com miniaturas de uma pasta (ex.: `F:\OBS Replays`) | Abertura |
@@ -279,6 +280,7 @@ Escolher o primeiro degrau cujo bitrate mínimo cabe no orçamento. Nunca aument
 | Publicação | Repositório local primeiro; público após aprovação |
 | Perfil de replay (v0.2) | Gerenciado pelo snip-clip na aba Gravação; scripts Python removidos ([ADR 0001](docs/adr/0001-snip-clip-manages-the-replay-profile.md)) |
 | Ajuste do corte (v0.3) | Guarda só as faixas que diferem da mixagem; o resto segue o vídeo (§17) |
+| Efeitos (v0.4, v0.5) | Um efeito é uma parte do corte, presa ao momento do vídeo, com velocidade e/ou zoom; câmera lenta primeiro, zoom depois (§18, §19) |
 
 ## 16. v0.2 — Gravação (perfil de replay)
 
@@ -359,3 +361,75 @@ Cada **corte** pode diferir da **mixagem** do vídeo em algumas faixas: o **ajus
 3. ↺ numa faixa e *Remover ajuste* voltam a seguir o vídeo; a marca some da lista de cortes.
 4. Montagem com faixas separadas (*Sem limite*) e o Discord desligado só num corte: o arquivo tem a faixa do Discord, em silêncio naquele trecho.
 5. Fechar e reabrir o vídeo mantém os ajustes.
+
+## 18. v0.4 — Efeitos (câmera lenta)
+
+Um **efeito** (ver [GLOSSARY.md](GLOSSARY.md)) é uma parte de um corte que toca em outra velocidade. Ex.: desacelerar só o lance, com o resto do corte em velocidade normal. O zoom entra no mesmo efeito na v0.5 (§19).
+
+### 18.1 Modelo
+
+- **FR-58** Um efeito tem início e fim, no tempo do vídeo original, e uma velocidade. Um corte pode ter vários efeitos; cada um fica inteiro dentro do corte, eles não se sobrepõem e duram no mínimo **0,2 s** (valor inicial, a calibrar em teste).
+- **FR-59** Velocidades oferecidas: **0,5×** e **0,25×**. A velocidade é guardada como número, para que outros valores (acelerar) entrem depois sem migração.
+- **FR-60** O efeito fica preso ao **momento do vídeo**, não à posição dentro do corte. Encurtar o corte apara o efeito; o efeito some se ficar fora do corte ou abaixo da duração mínima. Mover o corte inteiro não move o efeito.
+- **FR-61** Os efeitos são salvos com os cortes (FR-13) num campo opcional: projetos antigos abrem sem efeitos; uma versão anterior do snip-clip ignora o campo, mas mantém os cortes.
+
+### 18.2 Interface
+
+- **FR-62** Com um corte selecionado e o cursor dentro dele, o botão **Adicionar efeito** e a tecla `E` criam um efeito a partir do cursor, com **2 s** e **0,5×**. Se não houver 2 s livres até o fim do corte ou até o próximo efeito, o efeito ocupa o espaço livre; sem espaço para a duração mínima, nada é criado.
+- **FR-63** O efeito aparece como uma faixa dentro do corte na linha do tempo. Clicar o seleciona; as bordas são arrastáveis e param nas bordas do corte e no efeito vizinho. Com um efeito selecionado, um painel mostra início e fim numéricos e a velocidade.
+- **FR-64** `Delete` apaga o efeito selecionado; sem efeito selecionado, apaga o corte selecionado, como antes.
+- **FR-65** Na lista de cortes, um corte com efeitos mostra uma marca com o resumo (ex.: "2 efeitos: 0,5×") e a ação **Remover efeitos**. A duração mostrada é a **duração de saída**.
+- **FR-66** A linha do tempo continua no tempo do vídeo original: o efeito não se estica nela.
+
+### 18.3 Prévia
+
+- **FR-67** Ao tocar, a prévia desacelera dentro do efeito, com o áudio acompanhando no mesmo tom. `J`/`L` e o passo de quadro ignoram a velocidade do efeito. Onde cortes se sobrepõem vale a regra do FR-52.
+
+### 18.4 Exportação
+
+- **FR-68** Dentro do efeito, o vídeo é desacelerado repetindo quadros (sem interpolação) e o áudio é desacelerado mantendo o tom. A mixagem e o ajuste do corte valem dentro do efeito como no resto do corte. Entrada e saída do efeito são secas.
+- **FR-69** O orçamento de tamanho (§6.1), o aviso de qualidade baixa (§6.2) e o progresso usam a **duração de saída** do corte. Ex.: 4 s a 0,25× contam como 16 s.
+- **FR-70** Efeitos valem em *Separados* e em *Montagem*, em todos os presets recodificados, inclusive com faixas separadas.
+- **FR-71** *Original, sem recodificar* ignora os efeitos, com aviso visível antes de exportar.
+
+### 18.5 Fora de escopo da v0.4
+
+Zoom (§19); acelerar; interpolação de quadros (a testar em outro momento); transição suave na entrada e na saída do efeito.
+
+### 18.6 Critérios de aceite da v0.4
+
+1. Corte de 10 s com um efeito de 2 s a 0,5× no meio: o arquivo exportado tem 12 s, o trecho toca devagar com o som no mesmo tom e o resto toca normal.
+2. Dois efeitos no mesmo corte (0,5× e 0,25×): os dois aparecem no arquivo e não se sobrepõem ao arrastar as bordas.
+3. *Discord 20 MB* com um corte cuja duração de saída é bem maior que a do corte: o arquivo fica ≤ 20 MB.
+4. A prévia desacelera ao entrar no efeito e volta ao normal ao sair; `J`/`L` não mudam de velocidade dentro dele.
+5. Encurtar o corte até o meio do efeito apara o efeito; encurtar até antes dele o remove.
+6. Montagem de dois cortes, um com efeito: o efeito aparece só no trecho dele.
+7. *Original, sem recodificar* com um corte com efeito: aparece o aviso e o arquivo sai em velocidade normal.
+8. Fechar e reabrir o vídeo mantém os efeitos; um projeto salvo antes da v0.4 abre normalmente.
+
+## 19. v0.5 — Zoom
+
+O efeito (§18) ganha um **zoom** opcional: o trecho mostra uma região ampliada do quadro.
+
+### 19.1 Modelo
+
+- **FR-72** O zoom de um efeito é um centro (ponto do quadro) e um nível de **1× a 4×**. A região ampliada mantém sempre a proporção do vídeo e fica inteira dentro do quadro. O zoom é fixo durante o efeito, com entrada e saída secas.
+- **FR-73** A velocidade **1×** passa a ser oferecida, para efeitos só de zoom. Um efeito pode ter câmera lenta, zoom ou os dois.
+
+### 19.2 Interface
+
+- **FR-74** No painel do efeito, a opção **Zoom** ativa o zoom. Com ela ativa, clicar num ponto do player define o centro e um controle deslizante define o nível. Um retângulo sobre a imagem mostra a região resultante e pode ser arrastado.
+- **FR-75** A marca na lista de cortes (FR-65) inclui o zoom (ex.: "2 efeitos: 0,5×, zoom 2×").
+
+### 19.3 Prévia e exportação
+
+- **FR-76** A prévia amplia a imagem dentro do efeito, tocando ou pausada. Exceção, para editar o zoom: com o vídeo pausado dentro do efeito **selecionado**, o player mostra o quadro inteiro com o retângulo (FR-74); ao tocar, ou ao tirar a seleção do efeito, a prévia volta a ampliar.
+- **FR-77** Na exportação, a região é recortada e esticada até a resolução de saída do arquivo; a escada de resolução (§6.2) não muda. *Original, sem recodificar* ignora o zoom, como no FR-71.
+
+### 19.4 Critérios de aceite da v0.5
+
+1. Efeito com zoom 2× num canto do quadro: o arquivo exportado mostra essa região em tela cheia só durante o efeito.
+2. Arrastar o retângulo e mudar o nível atualizam a prévia; o retângulo nunca sai do quadro.
+3. Efeito com 0,5× e zoom 3×: o trecho sai lento e ampliado.
+4. Efeito só de zoom (1×): a duração de saída do corte não muda.
+5. Fechar e reabrir o vídeo mantém o zoom.

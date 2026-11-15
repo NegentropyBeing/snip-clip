@@ -128,4 +128,50 @@ describe("project", () => {
     expect(cuts[1]).not.toHaveProperty("override");
     expect(cuts[2]).toEqual({ id: "3", name: "", startSec: 5, endSec: 6 });
   });
+
+  it("keeps valid effects inside their cut and drops the rest (FR-61)", () => {
+    const json = JSON.stringify({
+      version: 1, path: "/v/a.mp4", presetId: "discord-20", mode: "separate", mix: [],
+      cuts: [
+        {
+          id: "1", name: "", startSec: 10, endSec: 20,
+          effects: [
+            { id: "b", startSec: 15, endSec: 25, speed: 0.25 },
+            { id: "a", startSec: 11, endSec: 13, speed: 0.5, later: true },
+            { id: "x", startSec: 2, endSec: 4, speed: 0.5 },
+            { id: "y", startSec: 12, endSec: 14, speed: "slow" },
+            { startSec: 16, endSec: 17, speed: 0.5 },
+            { id: "z", startSec: 18, endSec: 19, speed: 0 },
+          ],
+        },
+        { id: "2", name: "", startSec: 30, endSec: 40, effects: "nope" },
+      ],
+    });
+    const { cuts } = parseProject(json, 1)!;
+    expect(cuts[0].effects).toEqual([
+      { id: "a", startSec: 11, endSec: 13, speed: 0.5 },
+      { id: "b", startSec: 15, endSec: 20, speed: 0.25 },
+    ]);
+    expect(cuts[1]).not.toHaveProperty("effects");
+  });
+
+  it("keeps an effect's valid zoom, clamped, and drops a malformed one (FR-72)", () => {
+    const json = JSON.stringify({
+      version: 1, path: "/v/a.mp4", presetId: "discord-20", mode: "separate", mix: [],
+      cuts: [{
+        id: "1", name: "", startSec: 0, endSec: 10,
+        effects: [
+          { id: "a", startSec: 1, endSec: 2, speed: 1, zoom: { x: 0.25, y: 0.75, level: 2 } },
+          { id: "b", startSec: 3, endSec: 4, speed: 0.5, zoom: { x: 0, y: 0.5, level: 8 } },
+          { id: "c", startSec: 5, endSec: 6, speed: 0.5, zoom: { x: "left", y: 0.5, level: 2 } },
+          { id: "d", startSec: 7, endSec: 8, speed: 0.25 },
+        ],
+      }],
+    });
+    const fx = parseProject(json, 1)!.cuts[0].effects!;
+    expect(fx[0].zoom).toEqual({ x: 0.25, y: 0.75, level: 2 });
+    expect(fx[1].zoom).toEqual({ x: 0.125, y: 0.5, level: 4 });
+    expect(fx[2]).toEqual({ id: "c", startSec: 5, endSec: 6, speed: 0.5 });
+    expect(fx[3]).toEqual({ id: "d", startSec: 7, endSec: 8, speed: 0.25 });
+  });
 });

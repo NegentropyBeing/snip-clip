@@ -1,5 +1,16 @@
 import { retryKbps } from "./bitrate";
+import { totalDuration } from "./cuts";
+import { totalOutputDuration } from "./effects";
 import { buildJob, type ExportRequest } from "./ffmpeg";
+import type { Cut, Preset } from "./types";
+
+/**
+ * Length of the exported file, for the size budget, the low-quality warning and progress (FR-69):
+ * effects slow the cuts down, except with stream copy, which ignores them (FR-71).
+ */
+export function exportDuration(cuts: readonly Cut[], preset: Preset): number {
+  return preset.codec === "copy" ? totalDuration(cuts) : totalOutputDuration(cuts);
+}
 
 /** Platform side of an export: the Tauri backend in the app, Node in tests. */
 export interface FfmpegRunner {

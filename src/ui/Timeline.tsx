@@ -4,7 +4,7 @@ import { envelopeColumns, formatTimecode, laneHeight, mixEnvelope, mixRegions, n
 import { updateSettings, useApp } from "../editor/app";
 import { playback } from "../editor/playback";
 import { editor, useEditor } from "../editor/store";
-import { IconButton } from "./common";
+import { effectLabel, IconButton } from "./common";
 import { MinusIcon, PlusIcon } from "./icons";
 
 const RULER_H = 20;
@@ -15,15 +15,19 @@ const NO_TRACKS: AudioTrack[] = [];
 const MAX_PPS = 400;
 const TICK_STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1800];
 const MIN_TICK_PX = 70;
+/** Height of the effect band at the bottom of a cut (FR-63). */
+const EFFECT_H = 16;
 
 type Drag =
   | { kind: "create"; startX: number; startSec: number; moved: boolean }
   | { kind: "scrub" }
   | { kind: "move"; id: string; base: Cut; startSec: number; moved: boolean }
-  | { kind: "edge"; id: string; edge: "start" | "end" };
+  | { kind: "edge"; id: string; base: Cut; edge: "start" | "end" }
+  | { kind: "effectEdge"; cutId: string; effectId: string; edge: "start" | "end" }
+  | { kind: "effectMove"; cutId: string; effectId: string; baseStartSec: number; startSec: number; moved: boolean };
 
 export function Timeline() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const scroller = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -36,6 +40,7 @@ export function Timeline() {
   const playing = useEditor((s) => s.playing);
   const cuts = useEditor((s) => s.cuts);
   const selectedId = useEditor((s) => s.selectedId);
+  const selectedEffectId = useEditor((s) => s.selectedEffectId);
   const markIn = useEditor((s) => s.markIn);
   const markOut = useEditor((s) => s.markOut);
   const zoom = useEditor((s) => s.zoom);
@@ -150,14 +155,23 @@ export function Timeline() {
     if (e.button !== 0 || duration === 0) return;
     const target = e.target as HTMLElement;
     const cutEl = target.closest<HTMLElement>("[data-cut]");
+    const effectEl = target.closest<HTMLElement>("[data-effect]");
     const edge = target.dataset.edge as "start" | "end" | undefined;
     const sec = secAt(e.clientX);
     e.currentTarget.setPointerCapture(e.pointerId);
-    if (cutEl) {
+    if (cutEl && effectEl) {
+      // An effect: select it; its edges resize it, its body moves it (a plain click seeks to its start).
+      const cutId = cutEl.dataset.cut!;
+      const effectId = effectEl.dataset.effect!;
+      editor.selectEffect(cutId, effectId);
+      const effect = useEditor.getState().cuts.find((c) => c.id === cutId)?.effects?.find((x) => x.id === effectId);
+      if (edge) drag.current = { kind: "effectEdge", cutId, effectId, edge };
+      else if (effect) drag.current = { kind: "effectMove", cutId, effectId, baseStartSec: effect.startSec, startSec: sec, moved: false };
+    } else if (cutEl) {
       const id = cutEl.dataset.cut!;
       editor.select(id);
       const base = useEditor.getState().cuts.find((c) => c.id === id)!;
-      drag.current = edge ? { kind: "edge", id, edge } : { kind: "move", id, base, startSec: sec, moved: false };
+      drag.current = edge ? { kind: "edge", id, base, edge } : { kind: "move", id, base, startSec: sec, moved: false };
     } else if (target.closest("[data-ruler]")) {
       drag.current = { kind: "scrub" };
       playback.seek(sec);
@@ -185,9 +199,19 @@ export function Timeline() {
         editor.shiftCut(d.id, d.base, sec - d.startSec);
         break;
       case "edge":
-        editor.setCutEdge(d.id, d.edge, sec);
+        // Effects are trimmed from the cut as it was when the drag began (FR-60).
+        editor.setCutEdge(d.id, d.edge, sec, d.base);
         // Show the frame at the edge being dragged.
         playback.seek(sec);
+        break;
+      case "effectEdge":
+        editor.setEffectEdge(d.cutId, d.effectId, d.edge, sec);
+        playback.seek(sec);
+        break;
+      case "effectMove":
+        if (!d.moved && Math.abs(sec - d.startSec) * pps < DRAG_THRESHOLD_PX) return;
+        d.moved = true;
+        editor.moveEffect(d.cutId, d.effectId, d.baseStartSec + sec - d.startSec);
         break;
     }
   };
@@ -205,6 +229,8 @@ export function Timeline() {
       }
     } else if (d.kind === "move" && !d.moved) {
       playback.seek(d.base.startSec);
+    } else if (d.kind === "effectMove" && !d.moved) {
+      playback.seek(d.baseStartSec);
     }
   };
 
@@ -307,6 +333,24 @@ export function Timeline() {
               </span>
               <div data-edge="start" className="absolute inset-y-0 -left-1.5 w-3 cursor-ew-resize" />
               <div data-edge="end" className="absolute inset-y-0 -right-1.5 w-3 cursor-ew-resize" />
+              {/* Effects in source time: the band does not stretch with the speed (FR-66). */}
+              {c.effects?.map((fx) => (
+                <div
+                  key={fx.id}
+                  data-effect={fx.id}
+                  title={t("effects.bandHint", { speed: effectLabel(t, i18n.language, fx) })}
+                  className={`absolute bottom-0.5 cursor-grab overflow-hidden active:cursor-grabbing rounded-sm border text-[10px] leading-[14px] font-semibold ${
+                    fx.id === selectedEffectId && c.id === selectedId
+                      ? "z-10 border-amber-600 bg-amber-400/80 text-black"
+                      : "border-amber-500/80 bg-amber-400/45 text-amber-950 hover:bg-amber-400/65 dark:text-amber-100"
+                  }`}
+                  style={{ left: (fx.startSec - c.startSec) * pps - 2, width: Math.max(2, (fx.endSec - fx.startSec) * pps), height: EFFECT_H }}
+                >
+                  <span className="pointer-events-none whitespace-nowrap px-1.5">{effectLabel(t, i18n.language, fx)}</span>
+                  <div data-edge="start" className="absolute inset-y-0 left-0 w-2 cursor-ew-resize" />
+                  <div data-edge="end" className="absolute inset-y-0 right-0 w-2 cursor-ew-resize" />
+                </div>
+              ))}
             </div>
           ))}
 

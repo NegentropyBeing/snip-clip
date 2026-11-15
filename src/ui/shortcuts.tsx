@@ -33,7 +33,7 @@ export function useShortcuts(onOpen: () => void) {
         return;
       }
       if (mod || e.altKey) return;
-      const { time, selectedId, media } = useEditor.getState();
+      const { time, selectedId, selectedEffectId, cuts, media } = useEditor.getState();
       let handled = true;
       switch (e.key) {
         case " ":
@@ -77,10 +77,18 @@ export function useShortcuts(onOpen: () => void) {
         case "Escape":
           editor.clearMarks();
           break;
-        case "Delete":
-        case "Backspace":
-          if (selectedId) editor.removeCut(selectedId);
+        case "e":
+        case "E":
+          editor.addEffect();
           break;
+        case "Delete":
+        case "Backspace": {
+          // The selected effect first, otherwise the selected cut (FR-64).
+          const effect = cuts.find((c) => c.id === selectedId)?.effects?.some((x) => x.id === selectedEffectId);
+          if (selectedId && selectedEffectId && effect) editor.removeEffect(selectedId, selectedEffectId);
+          else if (selectedId) editor.removeCut(selectedId);
+          break;
+        }
         default:
           handled = false;
       }
@@ -101,6 +109,7 @@ export function ShortcutBar() {
     [["Shift+←/→"], t("shortcuts.second")],
     [["I", "O"], t("shortcuts.marks")],
     [["Enter"], t("shortcuts.confirm")],
+    [["E"], t("shortcuts.effect")],
     [["Delete"], t("shortcuts.delete")],
     [[isMac ? "⌘E" : "Ctrl+E"], t("shortcuts.export")],
   ];

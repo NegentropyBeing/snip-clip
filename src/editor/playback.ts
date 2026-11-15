@@ -1,6 +1,7 @@
 // Live preview: the <video> plays muted and is the clock; each audio track plays from its own
 // extracted file through a Web Audio gain node, re-synced to the video on every seek, stall and drift.
-import { cutAt, cutMix } from "../core";
+// Inside an effect normal playback slows down; the audio follows the video's rate with its pitch kept.
+import { cutAt, cutMix, speedAt } from "../core";
 import { editor, useEditor } from "./store";
 
 const DRIFT_SEC = 0.12;
@@ -21,12 +22,19 @@ class Playback {
   private driftTimer = 0;
   private reverseTimer = 0;
   private reverseRate = 0;
+  /** Rate asked for by play(); the video's actual rate also follows the effect under the playhead. */
+  private baseRate = 1;
+  /** Started with L: shuttle speeds ignore effects (FR-67). */
+  private shuttle = false;
   private detachVideo: (() => void) | null = null;
 
   constructor() {
     // Inside a cut the cut's override plays (FR-52); the clock moves `time` every frame.
     useEditor.subscribe((s, prev) => {
-      if (s.mix !== prev.mix || s.cuts !== prev.cuts || s.selectedId !== prev.selectedId || s.time !== prev.time) this.applyMix();
+      if (s.mix !== prev.mix || s.cuts !== prev.cuts || s.selectedId !== prev.selectedId || s.time !== prev.time) {
+        this.applyMix();
+        this.applySpeed();
+      }
     });
   }
 
@@ -71,6 +79,7 @@ class Playback {
     const ctx = this.ctx;
     this.tracks = urls.map((url) => {
       const el = new Audio();
+      el.preservesPitch = true;
       el.crossOrigin = "anonymous";
       el.preload = "auto";
       el.src = url;
@@ -103,6 +112,21 @@ class Playback {
       const gain = m?.enabled ? m.volume : 0;
       if (t.gain.gain.value !== gain) t.gain.gain.value = gain;
     });
+  }
+
+  /** Effect speed under the playhead, by the FR-52 rule; ignored while shuttling and when paused. */
+  private targetRate(): number {
+    const { cuts, selectedId, time } = useEditor.getState();
+    return this.shuttle ? this.baseRate : this.baseRate * speedAt(cuts, time, selectedId);
+  }
+
+  private applySpeed() {
+    const v = this.video;
+    if (!v || v.paused || this.reverseRate) return;
+    const rate = this.targetRate();
+    if (v.playbackRate === rate) return;
+    v.playbackRate = rate;
+    this.resyncAudio(false);
   }
 
   private resyncAudio(play: boolean) {
@@ -139,13 +163,15 @@ class Playback {
     this.reverseRate = 0;
   }
 
-  play(rate = 1) {
+  play(rate = 1, shuttle = false) {
     const v = this.video;
     if (!v) return;
     this.stopReverse();
     if (v.ended || v.currentTime >= v.duration - 0.05) v.currentTime = 0;
     void this.ctx?.resume();
-    v.playbackRate = rate;
+    this.baseRate = rate;
+    this.shuttle = shuttle;
+    v.playbackRate = this.targetRate();
     v.play().then(() => this.resyncAudio(true)).catch(() => {});
     editor.setPlaying(true, rate);
     this.startClock();
@@ -187,7 +213,7 @@ class Playback {
   jogForward() {
     const { playing, rate } = useEditor.getState();
     const next = playing && !this.reverseRate ? JOG_RATES[Math.min(JOG_RATES.indexOf(rate) + 1, JOG_RATES.length - 1)] : 1;
-    this.play(next);
+    this.play(next, true);
   }
 
   /** J: scrub backwards (media elements cannot play in reverse); repeating doubles the speed. */

@@ -3,13 +3,14 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useState, type ReactNode } from "react";
 import {
-  cutMix, hasOverride, planOutput, PRESET_ORDER, PRESETS, totalDuration, type AudioTrack, type Cut, type PresetId, type TrackMix,
+  cutMix, DEFAULT_ZOOM, EFFECT_SPEEDS, MAX_ZOOM, MIN_ZOOM, effectSlot, exportDuration, hasEffects, hasOverride, outputDuration, planOutput, PRESET_ORDER, PRESETS,
+  type AudioTrack, type Cut, type PresetId, type TrackMix,
 } from "../core";
 import { cancelJob, clearFinished, copyToClipboard, enqueueExport, useExports, type ExportJob } from "../editor/exportQueue";
 import { playback } from "../editor/playback";
 import { editor, useEditor } from "../editor/store";
-import { Button, formatDuration, IconButton, Kbd, ProgressBar, TimeInput } from "./common";
-import { CloseIcon, DownIcon, MixerIcon, ResetIcon, ToEndIcon, ToStartIcon, UpIcon } from "./icons";
+import { Button, formatDuration, formatSpeed, IconButton, Kbd, ProgressBar, selectClass, TimeInput } from "./common";
+import { CloseIcon, DownIcon, MixerIcon, ResetIcon, SlowIcon, ToEndIcon, ToStartIcon, UpIcon } from "./icons";
 
 const NO_TRACKS: AudioTrack[] = [];
 
@@ -112,8 +113,19 @@ function overrideSummary(t: TFunction, tracks: readonly AudioTrack[], cut: Cut):
     .join(", ");
 }
 
+/** "2 effects: 0.5×, 0.25×": the effects of a cut and their speeds (FR-65). */
+function effectSummary(t: TFunction, language: string, cut: Cut): string {
+  const effects = cut.effects ?? [];
+  // Slow speeds first, then the zoom levels (FR-75): "2 effects: 0.5×, zoom 2×".
+  const speeds = [...new Set(effects.map((e) => e.speed).filter((s) => s !== 1))].sort((a, b) => b - a).map((s) => formatSpeed(s, language));
+  const zooms = [...new Set(effects.flatMap((e) => (e.zoom ? [e.zoom.level] : [])))].sort((a, b) => a - b)
+    .map((l) => t("effects.zoomLevel", { level: formatSpeed(l, language) }));
+  const parts = [...speeds, ...zooms];
+  return t("effects.summary", { count: effects.length, speeds: parts.length > 0 ? parts.join(", ") : formatSpeed(1, language) });
+}
+
 export function CutList() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const cuts = useEditor((s) => s.cuts);
   const selectedId = useEditor((s) => s.selectedId);
   const duration = useEditor((s) => s.media?.durationSec ?? 0);
@@ -158,7 +170,8 @@ export function CutList() {
               <span>–</span>
               <TimeInput label={t("editor.end")} value={c.endSec} onCommit={(s) => editor.setCutEdge(c.id, "end", s)} />
               <IconButton label={t("editor.setEndHere")} className="!h-5 !w-5 text-xs" onClick={() => editor.setCutEdge(c.id, "end", useEditor.getState().time)}><ToEndIcon /></IconButton>
-              <span className="ml-auto tabular-nums">{formatDuration(c.endSec - c.startSec)}</span>
+              {/* The length in the exported file: effects make it longer (FR-65). */}
+              <span className="ml-auto tabular-nums" title={t("editor.outputDuration")}>{formatDuration(outputDuration(c))}</span>
             </div>
             {hasOverride(c) && (
               <div
@@ -171,9 +184,104 @@ export function CutList() {
                 <IconButton label={t("editor.removeOverride")} className="!h-5 !w-5 text-xs" onClick={() => editor.resetCutTrack(c.id)}><CloseIcon /></IconButton>
               </div>
             )}
+            {hasEffects(c) && (
+              <div
+                className="mt-0.5 ml-5 flex min-w-0 items-center gap-1 rounded bg-amber-50 pl-1 text-xs text-amber-800 dark:bg-amber-400/10 dark:text-amber-200"
+                title={effectSummary(t, i18n.language, c)}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <SlowIcon />
+                <span className="min-w-0 flex-1 truncate">{effectSummary(t, i18n.language, c)}</span>
+                <IconButton label={t("effects.removeAll")} className="!h-5 !w-5 text-xs" onClick={() => editor.clearEffects(c.id)}><CloseIcon /></IconButton>
+              </div>
+            )}
           </li>
         ))}
       </ol>
+    </Section>
+  );
+}
+
+/** Effects of the selected cut: "Add effect" (FR-62) and the selected effect's start, end and speed (FR-63). */
+export function EffectPanel() {
+  const { t, i18n } = useTranslation();
+  const cut = useEditor((s) => s.cuts.find((c) => c.id === s.selectedId) ?? null);
+  const selectedEffectId = useEditor((s) => s.selectedEffectId);
+  const canAdd = useEditor((s) => {
+    const c = s.cuts.find((x) => x.id === s.selectedId);
+    return c !== undefined && effectSlot(c, s.time) !== null;
+  });
+  if (!cut) return null;
+  const effect = cut.effects?.find((e) => e.id === selectedEffectId) ?? null;
+  const speeds = effect && !EFFECT_SPEEDS.includes(effect.speed) ? [...EFFECT_SPEEDS, effect.speed] : EFFECT_SPEEDS;
+
+  return (
+    <Section
+      title={t("effects.title")}
+      action={
+        <Button variant="ghost" className="!py-0.5 text-xs" disabled={!canAdd} title={canAdd ? undefined : t("effects.cannotAdd")} onClick={() => editor.addEffect()}>
+          + {t("effects.add")} <Kbd>E</Kbd>
+        </Button>
+      }
+    >
+      {!effect && <p className="text-xs text-neutral-500">{hasEffects(cut) ? t("effects.selectHint") : t("effects.none")}</p>}
+      {effect && (
+        <div className="flex items-center gap-1 text-xs text-neutral-500">
+          <TimeInput label={t("editor.start")} value={effect.startSec} onCommit={(s) => editor.setEffectEdge(cut.id, effect.id, "start", s)} />
+          <span>–</span>
+          <TimeInput label={t("editor.end")} value={effect.endSec} onCommit={(s) => editor.setEffectEdge(cut.id, effect.id, "end", s)} />
+          <select
+            aria-label={t("effects.speed")}
+            title={t("effects.speed")}
+            value={effect.speed}
+            onChange={(e) => editor.setEffectSpeed(cut.id, effect.id, Number(e.target.value))}
+            className={`${selectClass} ml-auto !py-0.5 !text-xs`}
+          >
+            {speeds.map((s) => <option key={s} value={s}>{formatSpeed(s, i18n.language)}</option>)}
+          </select>
+          <IconButton label={`${t("effects.remove")} (Delete)`} className="!h-6 !w-6" onClick={() => editor.removeEffect(cut.id, effect.id)}><CloseIcon /></IconButton>
+        </div>
+      )}
+      {effect && (
+        <div className="mt-1.5 space-y-1 text-xs">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={effect.zoom !== undefined}
+              onChange={(e) => {
+                editor.setEffectZoom(cut.id, effect.id, e.target.checked ? DEFAULT_ZOOM : null);
+                // The rectangle shows while paused inside the effect (FR-76): bring the playhead there.
+                const now = useEditor.getState().time;
+                if (e.target.checked && (now < effect.startSec || now >= effect.endSec)) {
+                  playback.pause();
+                  playback.seek(effect.startSec);
+                }
+              }}
+              className="h-4 w-4"
+            />
+            {t("effects.zoom")}
+          </label>
+          {effect.zoom && (
+            <>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={MIN_ZOOM}
+                  max={MAX_ZOOM}
+                  step={0.1}
+                  value={effect.zoom.level}
+                  aria-label={t("effects.zoomLevelLabel")}
+                  title={t("effects.zoomLevelLabel")}
+                  onChange={(e) => editor.setEffectZoom(cut.id, effect.id, { ...effect.zoom!, level: Number(e.target.value) })}
+                  className="min-w-0 flex-1"
+                />
+                <span className="w-10 text-right font-mono tabular-nums text-neutral-500">{formatSpeed(effect.zoom.level, i18n.language)}</span>
+              </div>
+              <p className="text-neutral-500">{t("effects.zoomHint")}</p>
+            </>
+          )}
+        </div>
+      )}
     </Section>
   );
 }
@@ -188,7 +296,9 @@ export function ExportPanel() {
   const preset = PRESETS[presetId];
   const montage = mode === "montage" && preset.allowsMontage && cuts.length > 1;
   const groups = montage ? [cuts] : cuts.map((c) => [c]);
-  const lowQuality = media !== null && groups.some((g) => planOutput(preset, media, totalDuration(g)).lowQuality);
+  // Budget and warning use the length of the exported file (FR-69).
+  const lowQuality = media !== null && groups.some((g) => planOutput(preset, media, exportDuration(g, preset)).lowQuality);
+  const ignoresEffects = preset.codec === "copy" && cuts.some(hasEffects);
 
   return (
     <Section title={t("export.title")}>
@@ -230,9 +340,10 @@ export function ExportPanel() {
 
       {cuts.length > 0 && (
         <p className="mb-1 text-xs text-neutral-500">
-          {t("export.summary", { count: cuts.length, duration: formatDuration(totalDuration(cuts)) })} → {t("export.files", { count: groups.length })}
+          {t("export.summary", { count: cuts.length, duration: formatDuration(exportDuration(cuts, preset)) })} → {t("export.files", { count: groups.length })}
         </p>
       )}
+      {ignoresEffects && <p className="mb-2 rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">{t("export.effectsIgnored")}</p>}
       {lowQuality && <p className="mb-2 rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">{t("export.lowQuality")}</p>}
 
       <Button variant="primary" className="w-full" disabled={cuts.length === 0} title={cuts.length === 0 ? t("export.nothing") : undefined} onClick={() => enqueueExport()}>

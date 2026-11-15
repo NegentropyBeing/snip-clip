@@ -27,6 +27,27 @@ export interface TrackMix {
 /** The tracks where a cut differs from the video's mix, by track ordinal (spec §17). */
 export type CutOverride = Record<number, TrackMix>;
 
+/** An enlarged region of the frame (spec §19): fixed for the whole effect. */
+export interface Zoom {
+  /** Centre of the region as a fraction of the frame's width and height (0..1). */
+  x: number;
+  y: number;
+  /** 1..4: the region is 1/level of the frame in each direction (FR-72). */
+  level: number;
+}
+
+/** A part of a cut that plays at another speed, zoomed in, or both (spec §18, §19). */
+export interface Effect {
+  id: string;
+  /** Source-video time, inside the cut: the effect stays at this moment of the video (FR-60). */
+  startSec: number;
+  endSec: number;
+  /** Playback speed: 0.5 = half speed, 1 for zoom-only effects (FR-59, FR-73). */
+  speed: number;
+  /** Absent: the whole frame is shown. */
+  zoom?: Zoom;
+}
+
 export interface Cut {
   id: string;
   name: string;
@@ -34,6 +55,8 @@ export interface Cut {
   endSec: number;
   /** Absent: every track follows the video's mix. */
   override?: CutOverride;
+  /** In time order, inside the cut, never overlapping; absent: the cut plays at normal speed. */
+  effects?: Effect[];
 }
 
 export type OutputMode = "separate" | "montage";

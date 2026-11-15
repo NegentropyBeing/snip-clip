@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import {
-  clearOverride, DEFAULT_PRESET, moveItem, normalizeCut, overrideTrack, setEdge, shiftCut,
-  type Cut, type MediaInfo, type OutputMode, type PresetId, type TrackMix,
+  addEffect, clearEffects, clearOverride, DEFAULT_PRESET, moveEffect, moveItem, normalizeCut, overrideTrack, removeEffect, setEdge, setEffectEdge,
+  setEffectSpeed, setEffectZoom, shiftCut, trimEffects,
+  type Cut, type MediaInfo, type OutputMode, type PresetId, type TrackMix, type Zoom,
 } from "../core";
 
 export type PreviewAudio = { status: "idle" | "extracting" | "ready" | "failed"; progress: number; error?: string };
@@ -14,6 +15,8 @@ interface EditorState {
   key: string | null;
   cuts: Cut[];
   selectedId: string | null;
+  /** An effect of the selected cut (FR-63); Delete removes it before the cut (FR-64). */
+  selectedEffectId: string | null;
   mix: TrackMix[];
   presetId: PresetId;
   mode: OutputMode;
@@ -33,7 +36,7 @@ interface EditorState {
 }
 
 const initial: EditorState = {
-  media: null, key: null, cuts: [], selectedId: null, mix: [],
+  media: null, key: null, cuts: [], selectedId: null, selectedEffectId: null, mix: [],
   presetId: DEFAULT_PRESET, mode: "separate", keepSeparateTracks: false,
   markIn: null, markOut: null, time: 0, playing: false, rate: 1,
   audio: { status: "idle", progress: 0 }, video: { source: "original", src: null, progress: 0 },
@@ -45,30 +48,34 @@ export const useEditor = create<EditorState>(() => initial);
 const set = useEditor.setState;
 const get = useEditor.getState;
 const duration = () => get().media?.durationSec ?? 0;
+const mapCut = (id: string, f: (c: Cut) => Cut) => set((s) => ({ cuts: s.cuts.map((c) => (c.id === id ? f(c) : c)) }));
 
 export const editor = {
   reset: (patch: Partial<EditorState> = {}) => set({ ...initial, ...patch }),
 
   addCut(startSec: number, endSec: number): Cut {
     const cut = normalizeCut({ id: crypto.randomUUID(), name: "", startSec, endSec }, duration());
-    set((s) => ({ cuts: [...s.cuts, cut], selectedId: cut.id, markIn: null, markOut: null }));
+    set((s) => ({ cuts: [...s.cuts, cut], selectedId: cut.id, selectedEffectId: null, markIn: null, markOut: null }));
     return cut;
   },
+  // Effects stay at their moment of the video, so changing the cut's edges trims them (FR-60).
   updateCut(id: string, patch: Partial<Omit<Cut, "id">>) {
-    set((s) => ({ cuts: s.cuts.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+    mapCut(id, (c) => trimEffects({ ...c, ...patch }));
   },
-  setCutEdge(id: string, edge: "start" | "end", sec: number) {
-    set((s) => ({ cuts: s.cuts.map((c) => (c.id === id ? setEdge(c, edge, sec, duration()) : c)) }));
+  /** With `base` (the cut when a drag began), effects are trimmed from it, so dragging back restores them. */
+  setCutEdge(id: string, edge: "start" | "end", sec: number, base?: Cut) {
+    mapCut(id, (c) => trimEffects(setEdge(base ?? c, edge, sec, duration())));
   },
   shiftCut(id: string, base: Cut, deltaSec: number) {
-    set((s) => ({ cuts: s.cuts.map((c) => (c.id === id ? shiftCut(base, deltaSec, duration()) : c)) }));
+    mapCut(id, () => trimEffects(shiftCut(base, deltaSec, duration())));
   },
   removeCut(id: string) {
     set((s) => {
       const i = s.cuts.findIndex((c) => c.id === id);
       const cuts = s.cuts.filter((c) => c.id !== id);
       const next = cuts[Math.min(i, cuts.length - 1)];
-      return { cuts, selectedId: s.selectedId === id ? (next?.id ?? null) : s.selectedId };
+      const selectedId = s.selectedId === id ? (next?.id ?? null) : s.selectedId;
+      return { cuts, selectedId, selectedEffectId: selectedId === s.selectedId ? s.selectedEffectId : null };
     });
   },
   moveCut(id: string, by: number) {
@@ -77,7 +84,42 @@ export const editor = {
       return { cuts: moveItem(s.cuts, i, i + by) };
     });
   },
-  select: (id: string | null) => set({ selectedId: id }),
+  select: (id: string | null) => set({ selectedId: id, selectedEffectId: null }),
+  selectEffect: (cutId: string, effectId: string | null) => set({ selectedId: cutId, selectedEffectId: effectId }),
+
+  /** "Add effect" and E (FR-62): at the playhead, in the selected cut. Returns whether one was created. */
+  addEffect(): boolean {
+    const { cuts, selectedId, time } = get();
+    const cut = cuts.find((c) => c.id === selectedId);
+    const id = crypto.randomUUID();
+    const next = cut && addEffect(cut, time, id);
+    if (!next) return false;
+    mapCut(next.id, () => next);
+    set({ selectedEffectId: id });
+    return true;
+  },
+  setEffectEdge(cutId: string, effectId: string, edge: "start" | "end", sec: number) {
+    mapCut(cutId, (c) => setEffectEdge(c, effectId, edge, sec));
+  },
+  moveEffect(cutId: string, effectId: string, startSec: number) {
+    mapCut(cutId, (c) => moveEffect(c, effectId, startSec));
+  },
+  setEffectSpeed(cutId: string, effectId: string, speed: number) {
+    mapCut(cutId, (c) => setEffectSpeed(c, effectId, speed));
+  },
+  /** The effect's zoom, clamped inside the frame; null turns it off (FR-74). */
+  setEffectZoom(cutId: string, effectId: string, zoom: Zoom | null) {
+    mapCut(cutId, (c) => setEffectZoom(c, effectId, zoom));
+  },
+  removeEffect(cutId: string, effectId: string) {
+    mapCut(cutId, (c) => removeEffect(c, effectId));
+    set((s) => ({ selectedEffectId: s.selectedEffectId === effectId ? null : s.selectedEffectId }));
+  },
+  /** "Remove effects" in the cut list (FR-65). */
+  clearEffects(cutId: string) {
+    mapCut(cutId, clearEffects);
+    set((s) => ({ selectedEffectId: s.selectedId === cutId ? null : s.selectedEffectId }));
+  },
 
   markIn: (sec: number) => set((s) => ({ markIn: sec, markOut: s.markOut !== null && s.markOut <= sec ? null : s.markOut })),
   markOut: (sec: number) => set((s) => ({ markOut: sec, markIn: s.markIn !== null && s.markIn >= sec ? null : s.markIn })),

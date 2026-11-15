@@ -1,11 +1,27 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { formatTimecode } from "../core";
+import { formatTimecode, previewZoom, zoomRegion, type Effect, type Zoom } from "../core";
 import { playback } from "../editor/playback";
 import { buildProxy } from "../editor/session";
 import { editor, useEditor } from "../editor/store";
 import { IconButton, Kbd } from "./common";
 import { FrameBackIcon, FrameForwardIcon, PauseIcon, PlayIcon } from "./icons";
+
+/** Box of the video element inside the player, for the zoom rectangle. */
+type Box = { left: number; top: number; width: number; height: number };
+
+/**
+ * Zoomed preview by CSS (FR-76): the region is scaled up around the element's centre and everything
+ * outside it is clipped, so the element keeps its layout box.
+ */
+function zoomStyle(z: Zoom): CSSProperties {
+  const r = zoomRegion(z);
+  const pct = (v: number) => `${(v * 100).toFixed(3)}%`;
+  return {
+    transform: `scale(${1 / r.width}) translate(${pct(0.5 - (r.left + r.width / 2))}, ${pct(0.5 - (r.top + r.height / 2))})`,
+    clipPath: `inset(${pct(r.top)} ${pct(1 - r.left - r.width)} ${pct(1 - r.top - r.height)} ${pct(r.left)})`,
+  };
+}
 
 export function Player() {
   const { t } = useTranslation();
@@ -14,12 +30,35 @@ export function Player() {
   const video = useEditor((s) => s.video);
   const audio = useEditor((s) => s.audio);
   const codec = useEditor((s) => s.media?.videoCodec ?? "");
+  const cuts = useEditor((s) => s.cuts);
+  const time = useEditor((s) => s.time);
+  const playing = useEditor((s) => s.playing);
+  const selectedId = useEditor((s) => s.selectedId);
+  const selectedEffectId = useEditor((s) => s.selectedEffectId);
+  const { zoom, editing } = previewZoom({ cuts, time, playing, selectedId, selectedEffectId });
+  const [box, setBox] = useState<Box | null>(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     playback.attach(el);
     return () => playback.detach(el);
+  }, []);
+
+  // The video is centred and letterboxed by layout; the rectangle follows its box.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setBox({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    if (el.parentElement) ro.observe(el.parentElement);
+    el.addEventListener("loadedmetadata", measure);
+    measure();
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("loadedmetadata", measure);
+    };
   }, []);
 
   // A source that loads but never yields a frame is as undecodable as one that errors.
@@ -40,12 +79,14 @@ export function Player() {
         ref={ref}
         src={src ?? undefined}
         className="max-h-full max-w-full"
+        style={zoom ? zoomStyle(zoom) : undefined}
         preload="auto"
         playsInline
         onClick={() => playback.toggle()}
         onError={() => void buildProxy()}
         onLoadedData={onLoadedData}
       />
+      {editing && box && box.width > 0 && <ZoomEditor box={box} cutId={editing.cutId} effect={editing.effect} />}
       {notices.length > 0 && (
         <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-1 p-2">
           {notices.map((n) => (
@@ -60,6 +101,63 @@ export function Player() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Editing the zoom (FR-74): the whole frame with the region's rectangle. Clicking sets the centre,
+ * dragging the rectangle moves it; the store keeps the region inside the frame.
+ */
+function ZoomEditor({ box, cutId, effect }: { box: Box; cutId: string; effect: Effect }) {
+  const { t } = useTranslation();
+  const ref = useRef<HTMLDivElement>(null);
+  // Offset from the pointer to the centre while dragging, so the rectangle does not jump.
+  const drag = useRef<{ dx: number; dy: number } | null>(null);
+  const zoom = effect.zoom!;
+  const r = zoomRegion(zoom);
+  const centre = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+
+  const pointAt = (e: ReactPointerEvent) => {
+    const b = ref.current!.getBoundingClientRect();
+    return { x: (e.clientX - b.left) / b.width, y: (e.clientY - b.top) / b.height };
+  };
+  const moveTo = (x: number, y: number) => editor.setEffectZoom(cutId, effect.id, { ...zoom, x, y });
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const p = pointAt(e);
+    if ((e.target as HTMLElement).closest("[data-zoom-rect]")) {
+      drag.current = { dx: p.x - centre.x, dy: p.y - centre.y };
+    } else {
+      drag.current = { dx: 0, dy: 0 };
+      moveTo(p.x, p.y);
+    }
+  };
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    const p = pointAt(e);
+    moveTo(p.x - d.dx, p.y - d.dy);
+  };
+
+  return (
+    <div
+      ref={ref}
+      className="absolute cursor-crosshair touch-none overflow-hidden"
+      style={box}
+      title={t("player.zoomHint")}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={() => (drag.current = null)}
+      onPointerCancel={() => (drag.current = null)}
+    >
+      <div
+        data-zoom-rect
+        className="absolute cursor-move border-2 border-amber-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]"
+        style={{ left: `${r.left * 100}%`, top: `${r.top * 100}%`, width: `${r.width * 100}%`, height: `${r.height * 100}%` }}
+      />
     </div>
   );
 }

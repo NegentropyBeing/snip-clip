@@ -58,11 +58,33 @@ Scope: [spec.md §17](spec.md#17-v03--ajuste-do-corte).
 - [x] Export: mixed presets, separate tracks (silence where off), Original (track choice only)
 - [x] Acceptance criteria in [spec.md §17.5](spec.md#175-critérios-de-aceite-da-v03), on Windows and on Linux Mint (`v0.3.0-beta.1`)
 
+## v0.4 — Effects (slow motion)
+
+Scope: [spec.md §18](spec.md#18-v04--efeitos-câmera-lenta).
+
+- [x] Core: effects saved with the cuts (start, end, speed), anchored to the video, trimmed with the cut, with tests
+- [x] Core: output duration of a cut, used by the size budget, the low-quality warning and progress
+- [x] Export: slow motion inside each effect (video and pitch-preserved audio), separate and montage, mixed and separate tracks; Original ignores effects with a warning
+- [ ] Timeline: effect band inside the cut, draggable edges, selection; "Add effect" button and `E`; `Delete` removes the selected effect
+- [ ] Effect panel (start, end, speed); cut list mark with a summary, "Remove effects", output duration
+- [ ] Preview slows down inside an effect; J/L and frame step do not
+- [ ] Acceptance criteria in [spec.md §18.6](spec.md#186-critérios-de-aceite-da-v04)
+
+## v0.5 — Zoom
+
+Scope: [spec.md §19](spec.md#19-v05--zoom).
+
+- [x] Core: optional zoom on an effect (centre, 1×–4×), 1× speed for zoom-only effects
+- [ ] Player: click to set the centre, level slider, draggable rectangle
+- [ ] Preview and export: zoomed region inside the effect
+- [ ] Acceptance criteria in [spec.md §19.4](spec.md#194-critérios-de-aceite-da-v05)
+
 ## Later
 
 | Feature | Area |
 |---|---|
-| Vertical 9:16 crop, slow motion, text/captions, fades | Editing |
+| Vertical 9:16 crop, text/captions, fades | Editing |
+| Animated zoom, speed-up (2×), frame interpolation for slow motion | Effects |
 | Discord **webhook** upload ("destinations" are planned in the v0.1 design) | After export |
 | Montage transitions (fade / crossfade) | Montage |
 | Folder **gallery** with thumbnails | Opening |

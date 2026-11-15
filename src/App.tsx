@@ -12,7 +12,7 @@ import { cancelFfmpegDownload, downloadFfmpeg, ffmpegDownloadInfo, type Download
 import { Button, IconButton, Kbd, ProgressBar } from "./ui/common";
 import { Player, Transport } from "./ui/Player";
 import { ShortcutBar, useShortcuts } from "./ui/shortcuts";
-import { CutList, ExportPanel, TrackMixer } from "./ui/Sidebar";
+import { CutList, EffectPanel, ExportPanel, TrackMixer } from "./ui/Sidebar";
 import { Timeline } from "./ui/Timeline";
 import { CloseIcon, GearIcon } from "./ui/icons";
 import { SettingsDialog } from "./ui/Settings";
@@ -280,6 +280,7 @@ function Editor({ onOpen }: { onOpen: () => void }) {
         <aside className="w-[340px] shrink-0 overflow-y-auto border-l border-neutral-200 dark:border-neutral-800">
           <TrackMixer />
           <CutList />
+          <EffectPanel />
           <ExportPanel />
         </aside>
       </div>
